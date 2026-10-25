@@ -1,0 +1,692 @@
+# ============================================================
+# SDF 栈 · H3 风格预设库（扩展版）
+#
+# 配套文档：docs/11-H3风格预设库.md
+#
+# 用法二选一：
+#  A) 把本文件的 styles: 整段合并进 config/presets.yaml 的 styles:（界面下拉可选）
+#  B) 不动配置，直接用文档 §12 方式 B 把 style 拼成常量前缀
+#
+# 字段说明：
+#   id       唯一标识（英文短名，界面与数据库用它）
+#   zh       中文显示名
+#   render   主渲染段（本栈现有链路就读这个字段，必填）
+#   en       英文版（language=en 的旧项目回退用）
+#   light    光线设定（固定附加段，逐字复用）
+#   palette  色调与调色
+#   texture  材质与质感
+#   motion   运镜倾向
+#   audio    声音倾向（写 overall_soundscape 时参考）
+#   avoid    排除项（H3 无 negative 字段，写成自然语言排除句接在镜头末尾）
+#   genres   适用剧型（仅供界面筛选，不参与渲染）
+#
+# ⚠️ 一致性靠"逐字复用"：同一集所有镜头必须使用完全相同的 render/light/
+#    palette/texture 字符串，不要改写、不要同义替换。
+# ============================================================
+
+styles:
+
+  # ---------------- A · 东方古装 ----------------
+  - id: guofeng
+    zh: 古风国潮
+    render: 中国古风美学，宋式庭院与木构建筑，青灰瓦顶、白墙、竹影；人物着素色交领汉服，衣料为哑光棉麻与薄纱；电影感，自然光为主
+    light: 晨间侧逆光穿过窗棂形成光柱；烛火做点缀光；不强打正面光
+    palette: 青绿与米白为主，低饱和，暗部偏青
+    texture: 棉麻哑光、木纹、宣纸、青苔石阶
+    motion: 固定中景为主，缓慢横移看庭院；慎用快速推拉
+    audio: 风过竹叶、檐角铁马、远处木鱼、衣料摩擦
+    avoid: 不要现代物件、不要塑料感衣料、不要浓艳饱和色
+    genres: [古风虐恋, 宅斗, 文人戏, 文旅宣传]
+    en: ancient Chinese aesthetic, Song-dynasty courtyard and timber architecture, grey tiles and white walls, bamboo shadows, hanfu in muted linen and gauze, cinematic, natural light
+
+  - id: xianxia
+    zh: 仙侠玄幻
+    render: 东方仙侠世界，云海之上的浮空山门，白玉台阶、琉璃飞檐、垂落的光带；人物着飘逸长袍，广袖与披帛随风鼓起；柔光雾化，空气中有细密光尘
+    light: 天光从云层缝隙漏下，方向明确；法器与人身边缘有淡金轮廓光
+    palette: 冷白与淡金，远景压青，近景提亮
+    texture: 丝绸高光、玉石半透、云雾颗粒、法术光丝
+    motion: 缓慢升镜揭示云海；环绕半圈看人；起势瞬间只推一次
+    audio: 高空风声、衣袂猎猎、远处钟磬、法术低鸣
+    avoid: 不要西式奇幻元素；人物脚部要有云雾遮挡
+    genres: [仙侠修真, 飞升, 师门, 仙魔对立]
+    en: eastern xianxia fantasy, floating sect above a sea of clouds, white jade stairs, glazed eaves, light ribbons, flowing robes, soft volumetric fog, floating dust
+
+  - id: xianxia-dark
+    zh: 仙侠暗黑
+    render: 暗黑仙侠，焦土与黑石荒原，断裂的锁链与插满大地的古剑；人物着玄黑劲装或破损道袍，面部有血痕；红黑主色，浓雾贴地
+    light: 单一逆光或侧顶光，人物面部一半沉入黑暗；地面有熔岩或血色的低位反光
+    palette: 黑、暗红、锈金，极低明度
+    texture: 干裂岩石、锈铁、湿血、烟尘
+    motion: 低机位仰拍，手持轻微晃动；爆发瞬间快速推近
+    audio: 闷雷、金属拖地、粗重呼吸、低频轰鸣
+    avoid: 不要明亮天空、不要干净服装、不要笑脸
+    genres: [魔道, 复仇, 堕仙, 暗黑修真]
+    en: dark xianxia, scorched black-stone wasteland, broken chains, ancient swords in the ground, black robes with bloodstains, red and black palette, ground fog
+
+  - id: wuxia
+    zh: 武侠江湖
+    render: 中国武侠，青石板长街与木质酒楼，酒旗、灯笼、木柱上的刀痕；人物着粗布劲装、束发、窄袖，腰佩刀剑；尘土可见，颗粒感胶片
+    light: 午后侧光穿过廊柱投下长条阴影；室内靠窗光与油灯
+    palette: 土黄、赭石、暗青，中等饱和
+    texture: 粗布、皮革、磨亮的金属、浮尘
+    motion: 固定中景对峙；出招用快速横移跟手；不用夸张环绕
+    audio: 刀剑出鞘的金属摩擦、脚步踏石、酒碗落地、风声穿巷
+    avoid: 不要过度飞檐走壁、不要现代面料光泽
+    genres: [武侠, 江湖恩仇, 镖局, 擂台]
+    en: Chinese wuxia, stone-slab street, timber tavern, wine banners, lanterns, blade marks on pillars, rough cotton fighting gear, dust, grainy film
+
+  - id: wuxia-mist
+    zh: 武侠竹林雾林
+    render: 晨雾竹林，密集的翠竹与薄雾，地面铺满落叶；人物身形半隐在雾中，只露出轮廓与持剑的手；大量留白与纵深
+    light: 柔和漫射光，顶部透下的斑驳光点；雾中有丁达尔光束
+    palette: 灰绿与浅灰，低对比
+    texture: 湿竹、水汽、落叶、布衣哑面
+    motion: 极缓横移或后退，让雾层逐层揭开；固定长镜头质感
+    audio: 竹叶沙沙、远处水声、布鞋踩落叶、一声剑鸣
+    avoid: 不要晴天硬光、不要人物面部特写过久
+    genres: [隐世高手, 追杀, 禅意段落, 片头]
+    en: misty bamboo forest at dawn, dense green bamboo, drifting fog, fallen leaves, silhouette half-hidden, negative space, god rays through mist
+
+  - id: ink-wash
+    zh: 水墨写意
+    render: 中国水墨写意风格，宣纸底纹可见，墨色浓淡分层，边缘有笔触晕染；大面积留白，人物以线描勾勒，色彩仅一点朱红或靛蓝
+    light: 无明确光源，靠墨色深浅表现体积
+    palette: 黑白灰加单点彩色
+    texture: 宣纸纤维、飞白笔触、墨滴扩散
+    motion: 极简平移，或画面如卷轴缓缓展开
+    audio: 宣纸翻动、毛笔落纸、极简古琴单音
+    avoid: 不要写实皮肤纹理、不要复杂背景细节、不要强烈投影
+    genres: [片头, 意境段, 回忆, 文化类]
+    en: Chinese ink-wash painting, visible rice paper grain, layered ink tones, bleeding brush edges, generous negative space, line-drawn figures, one accent of vermilion or indigo
+
+  - id: palace
+    zh: 宫廷权谋
+    render: 深宫权谋，朱红宫墙、金线蟠龙柱、厚重帷幔与垂落的珠帘；人物着繁复宫装或朝服，头面为点翠与金累丝；对称构图，庄重压迫
+    light: 殿内以烛台与窗棂侧光为主，形成硬边阴影；人物面部半明半暗
+    palette: 绛红、暗金、墨绿，高饱和但压暗
+    texture: 织锦、金线、玉石、漆器反光
+    motion: 对称固定机位；缓慢推近看眼神；不用手持
+    audio: 殿内回响、珠帘轻碰、衣摆拖地、远处更漏
+    avoid: 不要现代灯光、不要杂乱背景人物、不要明亮通透
+    genres: [宫斗, 朝堂, 宅斗, 权谋]
+    en: imperial palace intrigue, vermilion walls, gilded dragon columns, heavy drapes, hanging bead curtains, ornate court dress, symmetric composition, oppressive grandeur
+
+  - id: tang-splendor
+    zh: 盛唐华彩
+    render: 盛唐气象，朱红梁柱与彩绘斗拱，开放的长安市集，胡商驼队与灯轮；人物着齐胸襦裙或圆领袍，妆容为花钿与斜红；富丽、饱满、明亮
+    light: 正午到黄昏的暖金日光，清晰的方向与浓重投影
+    palette: 朱红、明黄、孔雀蓝，高饱和
+    texture: 丝绸光泽、彩绘木、铜器、香料烟雾
+    motion: 横移展示市井；升镜看灯轮；固定看人物
+    audio: 市集喧闹、驼铃、鼓乐、人群脚步
+    avoid: 不要灰暗压抑、不要单一冷色、不要空旷无人
+    genres: [唐风, 传奇, 古装喜剧, 盛世题材]
+    en: high Tang dynasty splendor, vermilion pillars, painted bracket sets, open Chang'an market, caravan camels, lantern wheels, chest-high ruqun, huadian makeup, bright and abundant
+
+  - id: dunhuang
+    zh: 敦煌西域
+    render: 敦煌西域风，赭红砂岩崖壁与洞窟，飞天壁画色彩（石青、石绿、土红）；人物着胡服或半臂，身上有金饰与垂坠珠串；风沙弥漫
+    light: 强烈斜射日光，沙面反光作为补光；洞窟内靠一线天光
+    palette: 土红、石青、石绿、金
+    texture: 粗砂岩、剥落壁画、干裂皮革、飞扬沙粒
+    motion: 低角度仰拍崖壁；跟随沙丘横移；缓慢环绕人物
+    audio: 大风、砂砾摩擦、驼铃、远处诵经
+    avoid: 不要湿润翠绿的植被、不要柔焦梦幻感
+    genres: [丝路, 异域古装, 探险, 神话起源]
+    en: Dunhuang western-regions style, ochre sandstone cliffs and caves, flying-apsara mural palette of azurite, malachite and earth red, nomadic dress with gold ornaments, blowing sand
+
+  - id: liaozhai
+    zh: 聊斋妖异
+    render: 中式志怪，深夜古宅与荒废庭院，残破纸窗透出一点暖黄灯光，树影在墙上扭曲；女子着素白或淡青长裙，黑发极长，肤色过白；雾与月光同时存在
+    light: 单一月亮冷光加室内一盏油灯的暖光，形成强冷暖分裂；油灯离人物脸部一臂距离
+    palette: 青灰、月白、暖黄点缀
+    texture: 旧木、宣纸、薄纱、湿润青苔
+    motion: 固定长镜头，人物缓慢转头；镜头静止等事件发生
+    audio: 夜风、纸窗抖动、远处犬吠、极轻的呼吸
+    avoid: 不要西式恐怖手法、不要血浆、不要西式鬼怪妆造
+    genres: [志怪, 悬疑灵异, 古风惊悚]
+    en: Chinese supernatural tale, old mansion at night, ruined courtyard, torn paper windows with a faint warm glow, twisted tree shadows, pale woman in white or pale blue, moonlight and fog
+
+  - id: republic
+    zh: 民国上海
+    render: 1930年代上海，石库门与装饰艺术建筑，黄包车与老式汽车，街边中文竖排霓虹招牌；人物着旗袍或中山装/长衫，男士戴礼帽；暖褐调，胶片颗粒
+    light: 黄昏暖光加街灯与霓虹的混合光源；室内靠百叶窗条纹光
+    palette: 暖褐、墨绿、暗红
+    texture: 呢料、丝绸、黄铜、旧墙灰泥
+    motion: 横移看街景；缓慢推近人物；轻微手持增加年代感
+    audio: 留声机、电车铃、雨声、皮鞋踏石
+    avoid: 不要现代建筑、不要当代服饰、不要冷蓝调
+    genres: [民国爱情, 谍战前身, 旧上海传奇]
+    en: 1930s Shanghai, shikumen lanes and art deco buildings, rickshaws and vintage cars, vertical Chinese neon signs, qipao and changshan, warm sepia, film grain
+
+  - id: hk-retro
+    zh: 港风复古
+    render: 1990年代香港电影质感，狭窄的旧唐楼街道与霓虹招牌堆叠，雨后地面反光；人物着宽肩西装或碎花连衣裙，蓬松卷发；青绿与洋红撞色，浓重颗粒
+    light: 霓虹为主光源，人物面部有明显彩色反光；实用光源打亮主体
+    palette: 青绿加洋红加暖黄，高饱和
+    texture: 胶片颗粒、镜头轻微光晕、湿滑沥青
+    motion: 手持跟拍、快速摇镜、突然的推近
+    audio: 雨声、远处粤语人声、老式引擎、霓虹电流嗡鸣
+    avoid: 不要干净整洁、不要冷白LED光、不要现代手机
+    genres: [港风怀旧, 黑帮情义, 都市虐恋]
+    en: 1990s Hong Kong cinema look, narrow old tong-lau streets stacked with neon signs, wet reflective asphalt, broad-shouldered suits and floral dresses, teal and magenta clash, heavy grain
+
+  # ---------------- B · 现代都市 ----------------
+  - id: urban-realism
+    zh: 都市写实
+    render: 现代都市写实风格，真实街景与室内，自然光，浅景深，35mm胶片颗粒
+    light: 窗光与室内灯混合，不额外打光
+    palette: 中性偏暖，克制
+    texture: 真实皮肤毛孔可见、棉质衣物、玻璃与水泥
+    motion: 固定或极缓推近；对话用中景过肩
+    audio: 城市底噪、空调、远处车流
+    avoid: 不要塑料感皮肤、不要过度磨皮、不要广告式打光
+    genres: [都市情感, 职场, 家庭]
+    en: modern urban realism, real streets and interiors, natural lighting, shallow depth of field, 35mm film grain
+
+  - id: urban-night
+    zh: 都市夜景霓虹
+    render: 现代都市夜景，霓虹倒影、湿滑街道、玻璃幕墙；人物在灯牌下形成剪影或侧光；青橙对比调色，电影感，虚化光斑
+    light: 店铺灯牌做人物主光，需写明颜色与方位；地面湿滑反光做补光
+    palette: 青加橙加品红，暗部保留细节
+    texture: 湿沥青反光、金属、雾气
+    motion: 跟拍行走、缓慢横移；不摇不晃
+    audio: 夜风、远处车流、脚步踩水
+    avoid: 不要全黑、不要只靠后期调色
+    genres: [都市虐恋, 悬疑, 夜戏]
+    en: modern urban night, neon reflections, wet streets, glass facades, teal and orange grading, cinematic, bokeh
+
+  - id: business-cold
+    zh: 职场商务冷调
+    render: 现代写字楼与会议室，玻璃隔断、长条会议桌、百叶窗；人物着合身西装与衬衫，妆容干净克制；冷白与灰蓝，极简构图
+    light: 顶部线性灯与窗光，形成均匀硬光；面部有少量阴影
+    palette: 冷白、灰蓝、少量木色温润
+    texture: 玻璃、铝板、真皮、纸张
+    motion: 固定对称；缓慢横移看办公室；不用手持
+    audio: 键盘、空调、远处电话、皮鞋踏地
+    avoid: 不要暖黄光、不要杂乱桌面、不要休闲服
+    genres: [职场斗争, 商战, 总裁剧]
+    en: modern corporate office, glass partitions, long boardroom table, venetian blinds, tailored suits, cold white and slate blue, minimal composition
+
+  - id: sweet-romance
+    zh: 甜宠暖调
+    render: 温暖浪漫色调，柔和金色光线穿过薄纱窗帘，空气中有细小光尘；人物着柔软针织与浅色衣裙；轻柔虚化，明亮通透，胶片颗粒
+    light: 大面积柔光，窗光加反光板效果，面部无硬阴影
+    palette: 奶白、浅粉、暖金，高明度低对比
+    texture: 羊绒、棉麻、柔光皮肤
+    motion: 固定中近景；极缓推近；轻微跟随
+    audio: 轻声笑、衣料摩擦、远处鸟鸣、钢琴单音
+    avoid: 不要暗调、不要强对比、不要浓妆
+    genres: [甜宠, 校园恋爱, 治愈]
+    en: warm romantic tone, soft golden light through sheer curtains, floating dust, knitwear and pale dresses, gentle bokeh, bright and airy, film grain
+
+  - id: suspense
+    zh: 悬疑冷调
+    render: 悬疑惊悚风格，冷青色调，高对比阴影，长走廊与半开的门；人物位于画面边缘，留出大量空荡空间；压抑氛围，电影感
+    light: 单一硬光源，走廊顶灯或台灯，大面积沉入黑暗；地面有延伸的影
+    palette: 冷青、墨绿、低饱和
+    texture: 水泥、旧漆、玻璃反光
+    motion: 固定不动让恐惧发生；极缓推近；偶尔手持轻晃
+    audio: 低频嗡鸣、水滴、远处金属碰撞、突然的静默
+    avoid: 不要明亮均匀的光、不要多人同框、不要笑脸
+    genres: [悬疑, 犯罪, 心理惊悚]
+    en: suspense thriller, cold teal grading, high contrast shadows, long corridor, half-open door, figure at frame edge, vast empty space, cinematic
+
+  - id: crime-noir
+    zh: 犯罪黑色
+    render: 黑色电影质感，狭窄巷道与旧仓库，铁皮卷帘门、积水、拖长的影；人物着深色风衣与皮夹克，面部被帽檐遮住一半；高对比黑白配少量暗红
+    light: 硬质侧光与百叶窗条纹投影；单点光源
+    palette: 黑灰加暗红，几乎无彩色
+    texture: 湿混凝土、锈铁、皮革、烟雾
+    motion: 低机位固定；缓慢横移；爆发时快速推近
+    audio: 雨、远处警笛、金属工具、压抑呼吸
+    avoid: 不要明亮天空、不要温暖色调、不要干净环境
+    genres: [犯罪, 复仇, 警匪]
+    en: film noir, narrow alley and old warehouse, corrugated shutter, puddles, long shadows, dark trench coats, face half-hidden by a hat brim, high contrast monochrome with dark red
+
+  - id: procedural
+    zh: 刑侦冷白
+    render: 刑侦纪实感，警局走廊与审讯室，单面镜、金属桌椅、白色瓷砖；人物着便装或制服，神情疲惫；冷白顶光，无美化
+    light: 均匀冷白顶光，眼下与鼻下有明显阴影
+    palette: 冷白、浅灰、少量蓝
+    texture: 瓷砖、金属、磨旧皮革、纸张
+    motion: 固定中景对峙；缓慢环绕审讯桌；手持轻微
+    audio: 日光灯电流声、翻纸、椅子摩擦、远处对讲机
+    avoid: 不要柔光美化、不要暖色、不要时尚服装
+    genres: [刑侦, 审讯, 破案]
+    en: police procedural realism, station corridor and interrogation room, one-way mirror, metal furniture, white tile, tired faces, flat cold white top light, no beautification
+
+  - id: hospital
+    zh: 医疗冷净
+    render: 现代医院走廊与手术室外，白色与浅绿的墙面、不锈钢推车、玻璃门；人物着白大褂或病号服；洁净、冷静、略带压迫
+    light: 顶部均匀荧光灯，反射在光滑地面上
+    palette: 白、浅绿、冷灰
+    texture: 不锈钢、玻璃、瓷砖、无纺布
+    motion: 跟拍走廊；固定看门内；不用夸张运镜
+    audio: 仪器滴答、推车轮子、广播、远处脚步声
+    avoid: 不要暖黄、不要脏污、不要拥挤人群
+    genres: [医疗剧, 生死抉择, 病房情感]
+    en: modern hospital corridor, white and pale green walls, stainless carts, glass doors, white coats and patient gowns, clean, clinical, faintly oppressive
+
+  - id: campus
+    zh: 校园青春
+    render: 中国大学校园，梧桐道、红砖教学楼、操场与自行车棚；人物着校服或休闲单品，背包；明亮通透，阳光与树影斑驳
+    light: 午后侧逆光与树影；室内靠窗光
+    palette: 清新绿、暖黄、天空蓝，中高饱和
+    texture: 帆布、棉T、砖墙、草地
+    motion: 跟拍奔跑；缓慢横移；固定中景
+    audio: 蝉鸣、自行车铃、远处球场、笑声
+    avoid: 不要成人职业装、不要昏暗、不要浓妆
+    genres: [校园恋爱, 成长, 青春]
+    en: Chinese university campus, plane-tree avenue, red brick teaching building, sports field, bike shed, uniforms and casual wear, bright and airy, dappled sunlight
+
+  - id: family-life
+    zh: 家庭生活流
+    render: 中国普通家庭室内，老式布艺沙发、搪瓷杯、贴满纸条的冰箱、阳台晾衣；人物着家常衣物；自然、不修饰、略带年代感
+    light: 午后窗光斜进客厅；厨房靠一盏吊灯
+    palette: 暖黄、米色、低对比
+    texture: 布料磨损、木纹、瓷砖
+    motion: 固定长镜头；轻微手持；不用推拉
+    audio: 电视声、抽油烟机、碗筷、窗外邻居
+    avoid: 不要样板间式整洁、不要冷白光、不要时尚摆设
+    genres: [家庭伦理, 现实题材, 亲情]
+    en: ordinary Chinese home interior, old fabric sofa, enamel mug, fridge covered with notes, laundry on the balcony, everyday clothes, natural, unpolished, faintly retro
+
+  - id: luxury
+    zh: 豪门奢华
+    render: 顶级私宅与酒店套房，大理石地面、落地窗、丝绒沙发、水晶吊灯；人物着高级定制礼服与西装，佩戴珠宝；低照度高质感，冷金与墨黑
+    light: 吊灯与壁灯的暖光加窗外夜景冷光，形成明暗分区
+    palette: 墨黑、暖金、深酒红
+    texture: 大理石、丝绒、水晶、抛光金属
+    motion: 缓慢升镜展示空间；环绕人物；固定看表情
+    audio: 高跟鞋踏石、酒杯轻碰、远处弦乐、空调低鸣
+    avoid: 不要廉价家具、不要杂乱、不要强白光
+    genres: [豪门, 复仇, 总裁, 财阀]
+    en: luxury private mansion and hotel suite, marble floors, floor-to-ceiling windows, velvet sofas, crystal chandelier, couture gowns and tailored suits, jewellery, low-key lit, cold gold and jet black
+
+  - id: rural
+    zh: 乡村现实
+    render: 中国北方农村，土坯房与玉米地、砖砌院墙、拖拉机与柴火堆；人物着旧棉袄与胶鞋，皮肤粗糙有风吹痕迹；自然、粗粝
+    light: 正午硬光或黄昏低角度暖光；室内靠门口透光
+    palette: 土黄、灰绿、褪色蓝
+    texture: 土墙颗粒、粗布、铁锈
+    motion: 固定；缓慢横移；手持跟人
+    audio: 鸡鸣、狗吠、风声、远处广播
+    avoid: 不要城市元素、不要磨皮、不要明亮通透
+    genres: [乡土, 现实题材, 返乡]
+    en: northern Chinese rural village, mud-brick houses and cornfields, brick courtyard walls, tractors and firewood, worn padded jackets and rubber shoes, weathered skin, natural and coarse
+
+  # ---------------- C · 类型片 ----------------
+  - id: cyberpunk
+    zh: 赛博朋克
+    render: 赛博朋克，密集堆叠的霓虹招牌中英混排、雨后的高架街道、全息广告；人物着机能风外套与义体装饰；品红与青色打光，高科技低生活
+    light: 霓虹为主光，人物面部有明显的品红与青双色反光；水洼反光补底
+    palette: 品红、青、紫，高饱和高对比
+    texture: 湿塑料、金属、透明线缆、全息粒子
+    motion: 低机位跟拍；快速横移；缓慢升镜看楼群
+    audio: 电子嗡鸣、雨声、合成人声广播、气动门
+    avoid: 不要自然光主导、不要木质与田园元素、不要干净整洁
+    genres: [科幻都市, 未来犯罪, 赛博爱情]
+    en: cyberpunk, densely stacked neon signage, rain-slicked elevated street, holographic ads, techwear with cyberware, magenta and cyan lighting, high tech low life
+
+  - id: wasteland
+    zh: 废土荒漠
+    render: 废土荒漠，强烈日光、高对比暖赭色调、锈蚀金属质感、飞扬沙尘；改装车辆与残破高架；人物着拼接护具与破布围巾；电影感，胶片颗粒
+    light: 正午顶光造成眼窝阴影；沙面反射做补光
+    palette: 暖赭、锈红、灰
+    texture: 锈铁、帆布、皮革、沙
+    motion: 低角度跟随车辆；缓慢横移扫过荒原
+    audio: 大风、金属吱嘎、引擎、远处雷声
+    avoid: 不要绿植茂盛、不要整洁服装、不要冷蓝调
+    genres: [末世, 生存, 废土公路]
+    en: post-apocalyptic wasteland, harsh sunlight, high contrast warm ochre grading, rusted metal texture, blowing sand, modified vehicles, patched armor and torn scarves, film grain
+
+  - id: scifi-space
+    zh: 太空科幻
+    render: 深空科幻，飞船驾驶舱与环形空间站，冷白面板与蓝色指示灯，舷窗外巨型行星；人物着贴身舱内服；宏大、洁净、寂静
+    light: 面板冷光与行星反光；舱内有明确的边缘光
+    palette: 冷白、青蓝、黑
+    texture: 金属拉丝、磨砂玻璃、发光面板
+    motion: 缓慢环绕舱内；固定看舷窗；极缓推近
+    audio: 低频引擎、气阀、面板提示音、呼吸声
+    avoid: 不要重力下垂的衣物、不要自然光、不要木质内饰
+    genres: [太空歌剧, 硬科幻, 孤舰]
+    en: deep space sci-fi, starship cockpit and ring station, cold white panels and blue indicator lights, giant planet beyond the window, fitted flight suits, vast, clean, silent
+
+  - id: scifi-near
+    zh: 近未来都市
+    render: 近未来中国都市，无人驾驶车流、玻璃塔楼间的空中连廊、可交互的全息屏；人物着极简功能服装；冷白与浅蓝，克制、可信、不夸张
+    light: 均匀的漫射天光加屏幕冷光；无硬阴影
+    palette: 冷白、浅蓝、浅灰
+    texture: 磨砂玻璃、阳极铝、织物
+    motion: 固定对称；缓慢横移；升镜看城市
+    audio: 电机低鸣、提示音、远处人群
+    avoid: 不要霓虹堆叠、不要破败感、不要浓彩色
+    genres: [近未来, AI题材, 都市科幻]
+    en: near-future Chinese city, autonomous traffic, sky bridges between glass towers, interactive holographic screens, minimal functional clothing, cold white and pale blue, restrained and plausible
+
+  - id: horror
+    zh: 中式恐怖
+    render: 中式恐怖惊悚，老式居民楼走廊、剥落的墙皮、闪烁的日光灯、半掩的防盗门；画面中的人物只露出身体局部；大量黑暗与构图失衡
+    light: 唯一闪烁的顶灯，其他区域几乎全黑；必须另给人物附近一个具体光源
+    palette: 灰绿、土黄、暗红
+    texture: 脱落的乳胶漆、潮湿墙皮、锈迹
+    motion: 固定不动；极缓推进；突然甩镜
+    audio: 日光灯电流、远处脚步、门轴摩擦、突然的静默
+    avoid: 不要西式恐怖元素、不要血浆喷溅、不要明亮光照
+    genres: [中式恐怖, 民俗惊悚, 密室]
+    en: Chinese horror, old residential corridor, peeling paint, flickering fluorescent tube, half-open security door, only a body part visible, heavy darkness, unbalanced composition
+
+  - id: gangster
+    zh: 港式黑帮
+    render: 港式警匪，庙街与茶餐厅、霓虹与油烟、折叠桌与塑料凳；人物着花衬衫配西装外套、金链；暖黄与青绿，粗粝颗粒
+    light: 茶餐厅日光灯与街边霓虹混合；人物面部有油烟造成的柔雾
+    palette: 暖黄、青绿、暗红
+    texture: 塑料、瓷砖、油烟、湿汗
+    motion: 手持跟拍；快速横移过桌；固定近景对峙
+    audio: 碗筷、炒锅、粤语人声、雨声
+    avoid: 不要干净现代装修、不要冷白LED、不要西式黑帮造型
+    genres: [黑帮情义, 警匪, 江湖]
+    en: Hong Kong crime drama, Temple Street and cha chaan teng, neon and cooking smoke, folding tables and plastic stools, floral shirts under suit jackets, gold chains, warm yellow and teal, coarse grain
+
+  - id: war
+    zh: 战争军旅
+    render: 现代战争，泥泞战壕与断墙、硝烟与飞扬尘土；人物着脏污迷彩、头盔与战术背心，面部有泥与汗；高对比、低饱和，颗粒粗重
+    light: 阴天漫射光或爆炸火光的瞬时硬光
+    palette: 土黄、灰绿、黑
+    texture: 泥、金属、帆布、烟尘
+    motion: 手持强烈晃动；低机位跟随；突然的固定
+    audio: 远处炮击、枪栓、无线电杂音、急促呼吸
+    avoid: 不要干净军装、不要蓝天白云、不要慢镜头美感
+    genres: [战争, 军旅, 历史战役]
+    en: modern warfare, muddy trench and broken walls, smoke and dust, dirt-stained camouflage, helmets and plate carriers, mud and sweat on faces, high contrast, desaturated, coarse grain
+
+  - id: disaster
+    zh: 灾难
+    render: 城市灾难现场，倒塌的楼体与扬尘、扭曲的钢筋、翻倒的车辆与火光；人物满身灰尘，衣服破损；灰黄主色，浓重烟尘遮挡远景
+    light: 火光作为暖色主光，与灰蓝的天空形成分裂
+    palette: 灰黄、橙红、黑
+    texture: 混凝土粉尘、扭曲金属、玻璃碎片
+    motion: 低机位仰拍；手持晃动；缓慢拉远揭示规模
+    audio: 低频轰鸣、碎裂、警报、呼喊
+    avoid: 不要干净整洁、不要完好建筑、不要鲜艳色彩
+    genres: [灾难, 末日, 救援]
+    en: urban disaster scene, collapsed building and dust, twisted rebar, overturned cars and fire, people covered in dust and torn clothes, grey-yellow palette, heavy smoke obscuring the distance
+
+  - id: western
+    zh: 西部荒漠
+    render: 西部片荒漠，红岩峡谷与干裂土地、木结构小镇与风滚草；人物着宽檐帽、风衣与马靴，脸部有风沙痕迹；强烈日光，高对比暖调，胶片颗粒
+    light: 日落低角度暖光，人物拉出长长的影子
+    palette: 赭红、橙金、深棕
+    texture: 干裂土、粗麻、皮革、铁
+    motion: 宽银幕固定；缓慢横移；推近看眼神
+    audio: 风声、马嘶、皮靴踏土、远处鹰叫
+    avoid: 不要绿植、不要现代物件、不要柔和光线
+    genres: [西部, 荒漠对决, 边地故事]
+    en: western desert, red rock canyon and cracked earth, timber town and tumbleweed, wide-brim hats, dusters and boots, wind-scoured faces, harsh sun, high contrast warm grading, film grain
+
+  - id: espionage
+    zh: 谍战冷战
+    render: 冷战谍战，冬日欧洲街道与老式公寓，砖墙、铁艺阳台、老式电话亭；人物着深色大衣与羊毛围巾，戴手套；灰蓝冷调，低明度
+    light: 阴天漫射加室内单一台灯；面部半明半暗
+    palette: 灰蓝、墨绿、褐
+    texture: 羊毛、砖石、旧木、雾气
+    motion: 固定长镜头；缓慢跟随；远距离观察视角
+    audio: 雪地脚步、老式电话铃、留声机、风声
+    avoid: 不要现代科技、不要明亮色调、不要快节奏剪辑
+    genres: [谍战, 间谍, 冷战]
+    en: cold war espionage, winter European street and old apartment, brick walls, wrought-iron balconies, old phone booth, dark overcoats and wool scarves, gloves, slate blue, low key
+
+  - id: heist
+    zh: 劫案高智商
+    render: 现代劫案，银行金库与地下车库，冷白灯管、金属卷帘、监控摄像头红灯；人物着黑色战术服与面罩；精准、冷峻、极简
+    light: 顶部灯管形成的条纹光，人物穿行于光影之间
+    palette: 冷白、钢灰、少量红点
+    texture: 抛光水泥、金属闸门、橡胶手套
+    motion: 缓慢横移跟随；固定看表盘；俯拍看布局
+    audio: 时钟滴答、金属工具、呼吸、门锁弹开
+    avoid: 不要暖光、不要杂乱背景、不要夸张爆炸
+    genres: [劫案, 犯罪策划, 反转剧]
+    en: modern heist, bank vault and underground garage, cold white tubes, metal roller doors, red camera indicator, black tactical gear and masks, precise, cold, minimal
+
+  - id: martial-modern
+    zh: 现代格斗
+    render: 现代综合格斗场馆或地下拳场，工业风厂房、聚光灯、围绳擂台与汗湿地面；人物着紧身训练服或赤膊，身上有汗光与旧伤；高对比，动感强
+    light: 正上方聚光灯形成强轮廓，四周压暗
+    palette: 冷白、暗蓝、皮肤暖色
+    texture: 汗、皮革、金属、混凝土地面
+    motion: 手持环绕；低机位仰拍；出拳瞬间快速推近
+    audio: 击打闷响、喘息、鞋底摩擦、人群低吼
+    avoid: 不要慢动作特效、不要飞舞的血液、不要超过两人同框
+    genres: [格斗, 体育, 逆袭]
+    en: modern MMA gym or underground fight club, industrial warehouse, spotlight, roped ring, sweat-soaked canvas, fitted training gear or bare torso, sweat sheen and old scars, high contrast, dynamic
+
+  # ---------------- D · 动画 / 风格化 ----------------
+  - id: anime
+    zh: 二次元番剧
+    render: 日本电视动画风格，赛璐璐上色，清晰描线，两到三层阴影，背景为手绘水彩质感；人物眼睛大而有高光，发丝有硬边分层；鲜艳但不刺眼
+    light: 动画式简化光照，明暗分界清晰，允许非物理的轮廓光
+    palette: 中高饱和，暖色为主
+    texture: 平涂色块、网点、线条
+    motion: 快速推近、横向甩镜、固定特写
+    audio: 清脆脚步、衣料、风、动画式夸张音效
+    avoid: 不要写实皮肤纹理、不要真实毛发、不要实拍光影
+    genres: [番剧, 国漫, 二次元短剧]
+    en: anime style, cel shading, clean line art, two to three shadow layers, hand-painted watercolor backgrounds, large expressive eyes with highlights, vibrant but not harsh
+
+  - id: anime-90s
+    zh: 90年代赛璐璐
+    render: 1990年代日本动画，手绘赛璐璐质感，胶片颗粒与轻微色偏，线条略不均，阴影为硬边单层；色彩偏褪，带老录像带的柔化
+    light: 简化动画光照，高位侧光
+    palette: 褪色暖调、略偏绿
+    texture: 胶片划痕、轻微抖动、色带
+    motion: 传统动画的平移与推近，允许轻微画面抖动
+    audio: 老式音效、磁带底噪、合成器配乐
+    avoid: 不要数字绘画的干净锐利、不要现代高饱和
+    genres: [复古番, 怀旧, 青春]
+    en: 1990s Japanese cel animation, hand-painted cel texture, film grain and slight color shift, uneven line work, single hard-edged shadow layer, faded color, soft video-tape blur
+
+  - id: cg-chinese
+    zh: 3D国漫
+    render: 中国3D动画电影质感，写实比例但风格化面部，布料与发丝有物理模拟感，服装细节丰富（刺绣、金属扣）；环境为高精度建模
+    light: CG三点光，明确的轮廓光与柔和补光
+    palette: 饱和但不脏，冷暖分区
+    texture: 次表面散射皮肤、布料纤维、金属反射
+    motion: 推轨、环绕、升降等电影级运镜都可用
+    audio: 宏大弦乐、布料摩擦、脚步
+    avoid: 不要低模感、不要塑料皮肤、不要二次元大眼
+    genres: [国漫, 玄幻3D, 游戏宣传]
+    en: Chinese 3D animated feature look, realistic proportions with stylized faces, simulated cloth and hair, richly detailed costume (embroidery, metal clasps), high-poly environments
+
+  - id: cg-pixar
+    zh: 欧美3D动画
+    render: 欧美3D动画电影风格，圆润造型与夸张表情，皮肤有柔和次表面散射，布料厚实；环境色彩明快，细节童趣
+    light: 柔和大面积主光，几乎无硬阴影，允许鲜艳的环境反射
+    palette: 高明度高饱和
+    texture: 软塑料、绒布、木质
+    motion: 大幅度推拉、环绕、快速切换
+    audio: 夸张拟音、轻快配乐
+    avoid: 不要写实比例、不要暗调、不要血腥
+    genres: [亲子, 喜剧, 合家欢]
+    en: western 3D animated feature style, rounded forms and exaggerated expressions, soft subsurface scattering skin, thick cloth, bright cheerful environments, playful detail
+
+  - id: stopmotion
+    zh: 定格黏土
+    render: 定格动画，黏土与硅胶人偶，表面有指纹与轻微不完美，布料为真实微缩织物，场景为微缩模型；每帧有细微的手工抖动感
+    light: 微缩布景的实拍灯光，硬质小光源，投影浓重
+    palette: 温暖、略旧、手作感
+    texture: 黏土、织物绒毛、纸板、漆面微缩
+    motion: 固定机位为主，偶有手工式的轻微移动
+    audio: 拟音感强的脚步声、吱嘎声
+    avoid: 不要光滑数字渲染、不要真实毛发、不要高速运动
+    genres: [艺术短片, 童话, 品牌片]
+    en: stop-motion animation, clay and silicone puppets with visible fingerprints and slight imperfections, real miniature fabrics, miniature sets, subtle hand-made frame jitter
+
+  - id: watercolor
+    zh: 水彩绘本
+    render: 手绘水彩绘本风格，纸纹明显，颜色自然晕染，边缘留白，线条为铅笔淡描；大量留白与柔和过渡，画面温暖安静
+    light: 无明确光源，靠色块浓淡
+    palette: 柔和淡彩、低饱和
+    texture: 水彩纸纹理、颜料堆积、铅笔线
+    motion: 极缓平移，像翻绘本页
+    audio: 钢琴、翻页、自然声
+    avoid: 不要锐利数字边缘、不要强烈对比、不要写实细节
+    genres: [亲子, 治愈, 绘本改编]
+    en: hand-painted watercolor picture book, visible paper texture, natural pigment bleeding, white edges, light pencil lines, generous white space, soft transitions, warm and quiet
+
+  - id: pixel
+    zh: 像素游戏
+    render: 16-bit像素游戏画面，有限色板，硬边像素块，等距或侧视视角；角色为小型像素精灵，背景为分层像素场景
+    light: 像素化的明暗分层，无真实光照
+    palette: 饱和有限色板
+    texture: 纯像素块，无抗锯齿
+    motion: 整格平移、突然切换场景
+    audio: 芯片音乐、8-bit音效
+    avoid: 不要平滑渐变、不要抗锯齿、不要真实纹理
+    genres: [游戏题材, 创意短片, 怀旧]
+    en: 16-bit pixel game visuals, limited palette, hard-edged pixel blocks, isometric or side view, small pixel sprites, layered pixel backgrounds, no anti-aliasing
+
+  - id: manga-bw
+    zh: 黑白漫画
+    render: 黑白漫画分镜，网点纸质感，粗细分明的墨线，速度线与集中线；明暗靠网点与纯黑块，无灰色渐变
+    light: 漫画式高对比，纯黑阴影
+    palette: 纯黑、纯白、网点灰
+    texture: 网点、墨线、纸张
+    motion: 漫画式的突然特写、速度线推进
+    audio: 风声、脚步等实际音效
+    avoid: 不要彩色、不要柔和灰阶、不要写实光影
+    genres: [漫改, 热血, 黑白美学]
+    en: black and white manga panels, screentone texture, ink lines with varied weight, speed lines and focus lines, tonal separation by screentone and solid black, no grey gradients
+
+  - id: paper-cut
+    zh: 剪纸皮影
+    render: 中国剪纸与皮影风格，镂空剪影，半透明牛皮上色，关节处可见连接钉；背景为灯光照亮的素色幕布
+    light: 背后透射的暖光，人物呈半透明剪影
+    palette: 红、赭、金黄，透过光的暖调
+    texture: 皮革透光、刻痕、幕布纤维
+    motion: 平面的横向平移，无纵深
+    audio: 锣鼓、二胡、幕后操作声
+    avoid: 不要真实景深、不要写实材质、不要复杂背景
+    genres: [民俗, 寓言, 片头]
+    en: Chinese paper-cut and shadow-puppet style, openwork silhouettes, translucent stained leather, visible joint pins, backlit plain scrim
+
+  # ---------------- E · 介质质感（可叠加） ----------------
+  - id: film-35mm
+    zh: 35mm胶片
+    render: 35mm胶片成像，可见细腻颗粒，高光有柔和晕开，暗部有轻微色偏，宽容度高；浅景深，焦点过渡自然
+    light: 自然，接受过曝高光
+    palette: 略偏暖，色彩有层次
+    texture: 颗粒、光晕、轻微划痕
+    motion: 任何，但避免数字感极强的稳定器滑轨
+    audio: 不影响
+    avoid: 不要锐利的数字边缘、不要HDR感
+    genres: [叠加层, 通用]
+    en: 35mm film capture, fine visible grain, soft highlight halation, slight shadow color shift, high latitude, shallow depth of field, natural focus falloff
+
+  - id: film-70s
+    zh: 70年代暖黄
+    render: 1970年代电影质感，暖黄偏色，低对比，柔焦，轻微暗角；服装与布景有年代感；颗粒粗，色彩褪
+    light: 柔和暖光，高光过曝
+    palette: 暖黄、橄榄绿、褐
+    texture: 粗颗粒、柔化、暗角
+    motion: 缓慢变焦推近
+    audio: 老式配乐、磁带底噪
+    avoid: 不要锐利、不要冷调、不要现代清晰度
+    genres: [叠加层, 怀旧]
+    en: 1970s film look, warm yellow cast, low contrast, soft focus, slight vignette, period wardrobe and sets, coarse grain, faded color
+
+  - id: vhs
+    zh: VHS录像带
+    render: VHS录像带画质，扫描线、色度溢出、边缘振铃、画面轻微抖动与噪点；色彩偏移，白平衡不稳
+    light: 平光，容易过曝
+    palette: 偏洋红与绿，低色度
+    texture: 扫描线、雪花噪点、磁带失真
+    motion: 固定或手持
+    audio: 磁带底噪、音频失真
+    avoid: 不要锐利细节、不要准确色彩
+    genres: [叠加层, 回忆]
+    en: VHS tape quality, scan lines, chroma bleed, edge ringing, slight frame jitter and noise, color shift, unstable white balance
+
+  - id: monochrome
+    zh: 黑白
+    render: 黑白摄影，高对比，纯黑与纯白之间保留丰富中间调；靠光线与材质表现层次
+    light: 硬光创造强烈明暗分割
+    palette: 黑白灰
+    texture: 颗粒、皮肤质感、布料纹理
+    motion: 固定或缓慢移动
+    audio: 不影响
+    avoid: 不要任何彩色
+    genres: [叠加层, 通用]
+    en: black and white photography, high contrast, rich mid-tones between pure black and white, tonal depth carried by light and material
+
+  - id: silent-era
+    zh: 默片
+    render: 1920年代默片，黑白，硬光，画面轻微抖动与划痕，四角暗角明显；人物表演夸张，动作幅度大
+    light: 强烈顶光与侧光，眼窝阴影重
+    palette: 黑白，可轻微褐色调
+    texture: 胶片划痕、闪烁、抖动
+    motion: 固定，偶尔横移
+    audio: 无对白，只有钢琴配乐与拟音
+    avoid: 不要彩色、不要自然光、不要现代表演方式
+    genres: [叠加层, 复古]
+    en: 1920s silent film, black and white, hard lighting, slight frame jitter and scratches, strong corner vignette, exaggerated performance and large gestures
+
+  - id: documentary
+    zh: 纪录片手持
+    render: 纪实风格，手持镜头，自然光，真实皮肤质感，不做风格化；构图不完美，焦点偶有呼吸
+    light: 现有光，接受不均衡
+    palette: 中性，低饱和
+    texture: 真实、粗糙
+    motion: 手持跟随，随机微调
+    audio: 现场同期声，环境嘈杂
+    avoid: 不要补光痕迹、不要完美构图、不要磨皮
+    genres: [叠加层, 现实题材]
+    en: documentary style, handheld camera, natural available light, realistic skin texture, no stylization, imperfect framing, occasional focus breathing
+
+  - id: commercial
+    zh: 广告大片
+    render: 高端商业广告，精密布光，产品与人物都有清晰轮廓光，背景为渐层或纯色；构图极简对称；每一帧都可作海报
+    light: 三点光加背景光，可控且精确
+    palette: 干净、高对比、品牌色主导
+    texture: 镜面反射、精密材质、无瑕表面
+    motion: 精确的推轨、环绕、升降，速度可控
+    audio: 定制配乐、干净拟音
+    avoid: 不要杂乱、不要自然瑕疵、不要手持
+    genres: [叠加层, 广告, 预告]
+    en: high-end commercial, precise lighting, clean rim light on product and subject, gradient or solid background, minimal symmetric composition, every frame poster-ready
+
+  - id: macro
+    zh: 微距产品
+    render: 微距摄影，极浅景深，产品表面纹理与微小划痕清晰可见；背景完全虚化为色块；水珠或雾气做点缀
+    light: 侧逆光勾勒边缘，柔光箱正面补光
+    palette: 干净、高纯度
+    texture: 玻璃、金属拉丝、液体
+    motion: 极缓推近或横向滑移
+    audio: 干净拟音、低频铺底
+    avoid: 不要广角变形、不要杂乱背景
+    genres: [叠加层, 道具特写]
+    en: macro photography, extremely shallow depth of field, surface texture and micro-scratches clearly visible, background fully blurred into color fields, water droplets or haze as accents
+
+  - id: dreamcore
+    zh: 梦核超现实
+    render: 梦核超现实，熟悉的场景被轻微扭曲：空的泳池、过曝的天空、重复的门、无人的游乐场；色彩过饱和但氛围空寂
+    light: 过度明亮的均匀光，无明确光源
+    palette: 过饱和的粉蓝与荧光绿
+    texture: 塑料、过曝、柔焦
+    motion: 极缓推进，像凝视
+    audio: 混响的音乐盒、远处模糊人声、耳鸣般的嗡鸣
+    avoid: 不要真实阴影、不要暗调、不要人物特写
+    genres: [叠加层, 梦境, 艺术片]
+    en: "dreamcore surrealism, familiar places subtly wrong — empty pool, overexposed sky, repeated doors, deserted playground, oversaturated color with an empty mood"
+
+  - id: cctv
+    zh: 监控伪纪录
+    render: 安防监控视角，固定高机位俯拍，广角畸变，画面有噪点；色彩发灰，动态范围窄
+    light: 红外或单一顶灯，人物面部惨白
+    palette: 灰绿、灰白
+    texture: 噪点、压缩块、镜头脏污
+    motion: 完全固定
+    audio: 无环境声或只有极低底噪、麦克风削波
+    avoid: 不要电影感运镜、不要浅景深、不要打光
+    genres: [叠加层, 悬疑, 伪纪录]
+    en: security camera view, fixed high-angle overhead, wide-angle distortion, visible noise, washed-out color, narrow dynamic range

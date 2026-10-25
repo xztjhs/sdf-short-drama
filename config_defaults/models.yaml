@@ -1,0 +1,89 @@
+# ============================================================
+# SDF 栈 · 模型注册表
+#
+# 用途：管理界面「模型接入」页读这里；渲染时按 id 取文件名
+# 修改后重启 api 生效
+#
+# ⚠️ v0.5：**只保留 MiniMax H3**。
+#    Wan2.2（ti2v-5b / umt5 文本编码器 / wan2.2 vae）已从配置移除，
+#    权重文件归档到 models_backup/wan22-20261022/，
+#    清单见 Gitea 仓库 admin/sdf-model-archive。
+#
+# ⚠️ 文件必须真实存在于 models_dir 对应子目录下
+#    启用前先在管理界面点「检查文件」，missing 的不会出现在可选列表
+# ============================================================
+
+models_dir: /models
+
+models:
+  # ---------------- MiniMax H3（唯一引擎：画面 + 原生立体声） ----------------
+  - id: h3-fl2va-int8
+    name: MiniMax H3 FL2VA (INT8 剪枝)
+    engine: h3
+    kind: diffusion
+    file: diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+    size_gb: 20.97
+    required: true
+    enabled: true
+    modes: [t2v, i2v]
+    note: 主力模型。文生视频 + 首尾帧图生视频，一次出画面+对白+音效
+
+  - id: h3-ref2va-int8
+    name: MiniMax H3 Ref2VA (INT8 剪枝)
+    engine: h3
+    kind: diffusion
+    file: diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    size_gb: 20.97
+    required: false
+    enabled: true
+    modes: [r2v]
+    note: 角色一致性专用（最多 9 图 + 3 视频 + 3 音频参考）。v0.5 起启用，用于解决跨镜人物脑裂
+
+  - id: h3-clip
+    name: Qwen3-VL 32B 文本编码器 (NVFP4)
+    engine: h3
+    kind: text_encoder
+    file: text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+    size_gb: 15.69
+    required: true
+    enabled: true
+    note: 原生支持中文提示词
+
+  - id: h3-vae-video
+    name: H3 视频 VAE (FP16)
+    engine: h3
+    kind: vae
+    file: vae/minimax_h3_video_vae_fp16.safetensors
+    size_gb: 5.21
+    required: true
+    enabled: true
+
+  - id: h3-vae-audio
+    name: H3 音频 VAE (FP32)
+    engine: h3
+    kind: vae
+    file: vae/minimax_h3_audio_vae_fp32.safetensors
+    size_gb: 0.61
+    required: true
+    enabled: true
+    note: 缺这个就没有声音
+
+  - id: h3-lora-turbo8
+    name: H3 Turbo 8步 LoRA
+    engine: h3
+    kind: lora
+    file: loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
+    size_gb: 1.96
+    required: true
+    enabled: true
+    note: 20步→8步，速度×2.5；音频与运动质量略降
+
+  - id: h3-lora-turbo4
+    name: H3 Turbo 4步 LoRA (768p)
+    engine: h3
+    kind: lora
+    file: loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors
+    size_gb: 1.96
+    required: false
+    enabled: false
+    note: 更快，但质量下降明显。草稿阶段可试

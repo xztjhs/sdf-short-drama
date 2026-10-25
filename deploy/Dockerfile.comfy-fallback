@@ -1,0 +1,56 @@
+##############################################################################
+# 备用 Dockerfile：从 .253 已有的 mmartial CUDA 镜像自建 ComfyUI
+#
+# 用途：当 yanwk/comfyui-boot 拉不下来时（Docker Hub 在国内只有 ~580KB/s）
+#
+# 依赖：mmartial/comfyui-nvidia-docker:ubuntu24_cuda12.8-latest（.253 已有）
+# 构建：docker build -f Dockerfile.comfy -t video-comfyui:local .
+# 用法：在 docker-compose.yml 里把 comfyui.image 改成 video-comfyui:local，
+#       并加 entrypoint: []（覆盖原镜像的 init 脚本）
+#
+# ⚠️ 注意
+#  - 原镜像 entrypoint 是 /comfyui-nvidia_init.bash，会尝试 fork 到 comfytoo 用户，
+#    在 compose 里必须用 entrypoint: ["python3","/opt/ComfyUI/main.py",...] 覆盖
+#  - torch 从 download.pytorch.org 下载，国内速度未知，必要时换清华镜像
+##############################################################################
+FROM mmartial/comfyui-nvidia-docker:ubuntu24_cuda12.8-latest
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git curl ca-certificates \
+      libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- PyTorch cu128（与基础镜像的 CUDA 12.8 对齐）----
+RUN pip3 install --break-system-packages --no-cache-dir \
+      torch torchvision torchaudio \
+      --index-url https://download.pytorch.org/whl/cu128
+
+# ---- ComfyUI 主线 ----
+# 必须用较新版本，H3 节点（comfy_extras/nodes_minimax_h3.py）需要 0.30+
+RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI /opt/ComfyUI \
+    && cd /opt/ComfyUI \
+    && pip3 install --break-system-packages --no-cache-dir -r requirements.txt
+
+# ---- 常用扩展（可选，按需打开）----
+# RUN git clone --depth 1 https://github.com/Comfy-Org/ComfyUI-Manager /opt/ComfyUI/custom_nodes/ComfyUI-Manager
+
+WORKDIR /opt/ComfyUI
+
+# 模型目录（compose 会挂载覆盖）
+RUN mkdir -p /opt/ComfyUI/models/{diffusion_models,text_encoders,vae,loras,embeddings} \
+             /opt/ComfyUI/{output,input}
+
+EXPOSE 8188
+
+# 24GB 显存必需参数
+CMD ["python3", "main.py", \
+     "--listen", "0.0.0.0", \
+     "--port", "8188", \
+     "--disable-pinned-memory", \
+     "--fp16-intermediates", \
+     "--reserve-vram", "2.5", \
+     "--disable-auto-launch"]

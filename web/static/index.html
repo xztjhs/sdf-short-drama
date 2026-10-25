@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDF · 短剧工厂</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3240;
+  --text:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --ok:#3fb950;
+  --warn:#d29922; --err:#f85149; --h3:#a371f7; --wan:#2ea043;
+  --log-bg:#010409; --shadow:rgba(0,0,0,.5);
+}
+/* 浅色主题 */
+html[data-theme="light"]{
+  --bg:#f6f8fa; --panel:#ffffff; --panel2:#f0f3f6; --line:#d0d7de;
+  --text:#1f2328; --dim:#656d76; --accent:#0969da; --ok:#1a7f37;
+  --warn:#9a6700; --err:#cf222e; --h3:#8250df; --wan:#1a7f37;
+  --log-bg:#f6f8fa; --shadow:rgba(31,35,40,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+button{font:inherit;cursor:pointer;border:none;border-radius:6px;padding:8px 16px;
+  background:var(--accent);color:#fff;transition:.15s}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+button.sm{padding:4px 10px;font-size:12px}
+input,textarea,select{font:inherit;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+textarea{resize:vertical;font-family:ui-monospace,monospace;font-size:13px;line-height:1.55}
+label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;
+  background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+header h1{font-size:15px;font-weight:600;white-space:nowrap}
+header h1 span{color:var(--accent)}
+.sysbar{display:flex;gap:14px;margin-left:auto;font-size:12px;color:var(--dim);flex-wrap:wrap}
+.sysbar b{color:var(--text)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--err)} .dot.warn{background:var(--warn)}
+
+.layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 50px)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:12px;overflow-y:auto}
+main{padding:18px 20px;overflow-x:auto}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:16px;margin-bottom:14px}
+.card h2{font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 .tag{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--panel2);
+  color:var(--dim);font-weight:400}
+
+.prj{padding:9px;border-radius:6px;cursor:pointer;margin-bottom:3px;
+  border:1px solid transparent}
+.prj:hover{background:var(--panel2)}
+.prj.active{background:var(--panel2);border-color:var(--accent)}
+.prj .t{font-weight:600;font-size:13px}
+.prj .m{font-size:11px;color:var(--dim);margin-top:2px}
+
+/* 项目卡片：进度条 / 更多按钮 / 批量栏 / 右键菜单 */
+.mini-bar{height:3px;background:#30363d;border-radius:2px;margin-top:5px;overflow:hidden}
+.mini-bar>div{height:100%;background:var(--ok);transition:width .3s}
+.icon-btn{background:transparent;border:none;color:var(--dim);font-size:16px;
+  line-height:1;padding:2px 5px;border-radius:4px;flex:0 0 auto;cursor:pointer}
+.icon-btn:hover{background:#30363d;color:var(--text)}
+.batchbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  padding:7px 9px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:6px;font-size:12px}
+.ctx-menu{position:fixed;z-index:200;background:var(--panel2);
+  border:1px solid var(--line);border-radius:7px;padding:5px;
+  min-width:160px;box-shadow:0 8px 24px var(--shadow);font-size:13px}
+.ctx-menu>div{padding:7px 11px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.ctx-menu>div:hover{background:#30363d}
+.ctx-menu>div.danger{color:var(--err)}
+.ctx-menu>div.danger:hover{background:rgba(248,81,73,.15)}
+.ctx-menu .sep{height:1px;background:var(--line);margin:4px 6px;padding:0}
+.ctx-menu .sep:hover{background:var(--line)}
+button.danger{background:var(--err);color:#fff}
+
+/* 五段流程步骤条 */
+.steps{display:flex;gap:0;margin-bottom:18px;background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.step{flex:1;padding:12px 10px;text-align:center;cursor:pointer;
+  border-right:1px solid var(--line);transition:.15s;position:relative}
+.step:last-child{border-right:none}
+.step:hover{background:var(--panel2)}
+.step .n{display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;background:#30363d;color:var(--dim);
+  font-size:12px;font-weight:600;margin-bottom:4px}
+.step .l{font-size:12px;color:var(--dim)}
+.step.done .n{background:var(--ok);color:#fff}
+.step.done .l{color:var(--text)}
+.step.active{background:var(--panel2)}
+.step.active .n{background:var(--accent);color:#fff}
+.step.active .l{color:var(--text);font-weight:600}
+.step.locked{opacity:.4;cursor:not-allowed}
+
+.row{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap}
+.row>div{flex:1;min-width:160px}
+.row .fixed{flex:0 0 auto;min-width:auto}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.pill.pending{background:#30363d;color:var(--dim)}
+.pill.queued{background:#1f3a5f;color:var(--accent)}
+.pill.running{background:#3d2f00;color:var(--warn)}
+.pill.done{background:#12351f;color:var(--ok)}
+.pill.failed{background:#3d1418;color:var(--err)}
+.pill.skipped{background:#22272e;color:#6e7681}
+.pill.h3{background:rgba(163,113,247,.18);color:var(--h3)}
+.pill.wan22{background:rgba(46,160,67,.18);color:var(--wan)}
+
+.eng{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
+.eng.h3{background:rgba(163,113,247,.18);color:var(--h3)}
+.eng.wan22{background:rgba(46,160,67,.18);color:var(--wan)}
+
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{background:var(--panel2);border-radius:6px;padding:11px}
+.stat .v{font-size:19px;font-weight:600}
+.stat .k{font-size:11px;color:var(--dim)}
+
+.progress{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin:8px 0}
+.progress .bar{height:100%;background:var(--accent);transition:width .3s}
+
+.log{background:var(--log-bg);border:1px solid var(--line);border-radius:6px;padding:10px;
+  font-family:ui-monospace,monospace;font-size:12px;max-height:300px;overflow:auto;
+  line-height:1.65;white-space:pre-wrap}
+.log .t{color:#484f58}
+.log .err{color:var(--err)}
+.log .ok{color:var(--ok)}
+
+.empty{text-align:center;padding:50px 20px;color:var(--dim)}
+.empty .big{font-size:38px;margin-bottom:10px;opacity:.3}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--panel2);
+  border:1px solid var(--line);border-left:3px solid var(--accent);
+  padding:11px 16px;border-radius:6px;font-size:13px;z-index:100;
+  opacity:0;transform:translateY(10px);transition:.25s;max-width:400px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.err{border-left-color:var(--err)}
+.toast.ok{border-left-color:var(--ok)}
+
+.mono{font-family:ui-monospace,monospace;font-size:12px}
+.muted{color:var(--dim)}
+.flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--dim);line-height:1.5}
+.hint code{background:var(--panel2);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace}
+
+/* 镜头表：可读报错 / 下载按钮 */
+.errbox{font-size:10.5px;line-height:1.35;color:var(--err);background:rgba(248,81,73,.1);
+  border-left:2px solid var(--err);border-radius:3px;padding:3px 6px;margin-top:4px;
+  max-width:200px;cursor:pointer}
+.errbox:hover{background:rgba(248,81,73,.18)}
+.btn-ghost{display:inline-block;padding:8px 16px;border:1px solid var(--line);
+  border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.btn-ghost:hover{background:var(--panel2)}
+
+/* 媒体预览：默认限高 600px，按比例缩放；可切换适应方式 */
+.media-box{display:flex;align-items:center;justify-content:center;
+  background:#000;border-radius:6px;overflow:hidden;margin:8px 0;
+  max-height:var(--media-max,600px)}
+.media-box>video,.media-box>img{display:block;max-width:100%;max-height:var(--media-max,600px);
+  width:auto;height:auto;object-fit:contain}
+.media-box.fill>video,.media-box.fill>img{width:100%;height:auto}
+.media-tools{display:flex;gap:6px;align-items:center;font-size:12px;
+  color:var(--dim);flex-wrap:wrap}
+.media-tools input[type=range]{width:110px;padding:0}
+.monchk{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 6px;
+  border-radius:4px;cursor:pointer}
+.monchk:hover{background:var(--panel2)}
+.monchk input{width:14px;height:14px;margin:0}
+
+/* 渲染队列网格 */
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));
+  gap:6px;margin-top:12px}
+.qcell{position:relative;aspect-ratio:1;border-radius:6px;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;
+  border:1px solid var(--line);cursor:pointer;transition:.15s;font-size:11px}
+.qcell:hover{transform:scale(1.06)}
+.qcell .n{font-weight:600;font-size:13px;line-height:1.1}
+.qcell .e{font-size:9px;opacity:.65;margin-top:2px;letter-spacing:.3px}
+.qcell.pending{background:#21262d;color:var(--dim)}
+.qcell.queued{background:#1f3a5f;color:var(--accent)}
+.qcell.running{background:#3d2f00;color:var(--warn);border-color:var(--warn)}
+.qcell.done{background:#12351f;color:var(--ok);border-color:rgba(63,185,80,.4)}
+.qcell.failed{background:#3d1418;color:var(--err);border-color:rgba(248,81,73,.5)}
+.qcell.skipped{background:#161b22;color:#6e7681;opacity:.6}
+.qcell .spin{position:absolute;inset:0;border-radius:6px;
+  border:2px solid transparent;border-top-color:var(--warn);
+  animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+textarea.storybox{max-height:340px;overflow-y:auto;resize:vertical}
+.epscroll{max-height:560px;overflow-y:auto;padding-right:6px;margin-bottom:8px}
+.epscroll::-webkit-scrollbar{width:8px}
+.epscroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.epscroll::-webkit-scrollbar-track{background:transparent}
+.ep{padding:10px;background:var(--panel2);border-radius:6px;margin-bottom:8px;cursor:pointer;
+  border:1px solid transparent}
+.epnum{display:inline-block;min-width:20px;height:20px;line-height:20px;text-align:center;
+  background:var(--accent);color:#fff;border-radius:4px;font-size:11px;
+  font-weight:600;margin-right:6px}
+.ep:hover{border-color:var(--line)}
+.ep.active{border-color:var(--accent)}
+.ep .h{font-weight:600;font-size:13px;margin-bottom:3px}
+.ep .b{font-size:12px;color:var(--dim)}
+
+.charline{display:flex;gap:8px;align-items:flex-start;padding:8px;
+  background:var(--panel2);border-radius:6px;margin-bottom:6px}
+.charline .name{font-weight:600;min-width:70px;font-size:13px}
+.charline .body{flex:1;font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 SDF <span>短剧工厂</span></h1>
+  <div class="sysbar" id="sysbar"></div>
+  <button class="icon-btn" onclick="openLibManager()" title="全局角色库（跨项目统一管理）"
+    style="font-size:14px">👤</button>
+  <button class="icon-btn" onclick="openQueuePanel()" title="渲染队列（全项目）"
+    style="font-size:14px">⏳<span id="qBadge" style="font-size:10px;color:var(--warn);margin-left:2px"></span></button>
+  <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="切换主题"
+    style="font-size:14px">☀️</button>
+  <button class="icon-btn" onclick="openMonitorSettings()" title="监控栏设置"
+    style="font-size:14px">📊</button>
+  <a href="/admin" style="color:var(--dim);font-size:12px;white-space:nowrap">⚙️ 后台</a>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="flex" style="margin-bottom:8px">
+      <button class="sm" onclick="newProject()">+ 新项目</button>
+      <button class="sm ghost" onclick="refreshAll()" title="刷新">↻</button>
+      <button class="sm ghost" onclick="toggleArchiveView()" id="archBtn" title="显示已归档">📦</button>
+    </div>
+    <input id="prjSearch" placeholder="搜索项目…" oninput="renderProjects()"
+      style="margin-bottom:8px;font-size:12px;padding:6px 9px">
+    <div id="batchBar" style="display:none;margin-bottom:8px"></div>
+    <div id="projectList"></div>
+  </aside>
+  <main id="main"><div class="empty"><div class="big">🎬</div>选择或创建一个项目开始</div></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STAGES = [
+  ['story','输入故事'],
+  ['outline','剧情大纲'],
+  ['locked','锁定基础信息'],
+  ['storyboard','分镜头脚本'],
+  ['render','渲染成片'],
+];
+let S = { projects:[], project:null, episode:null, stage:'story', tasks:[],
+          showArchived:false, selected:new Set(),
+          handledTasks:new Set(), watchingTask:null };
+
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toast(m,k=''){const t=$('#toast');t.textContent=m;t.className='toast show '+k;
+  clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3200)}
+function bytes(n){if(!n)return'0 B';const u=['B','KB','MB','GB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i?1:0)+' '+u[i]}
+
+async function api(p,o={}){
+  const r=await fetch(p,{headers:{'Content-Type':'application/json'},...o});
+  if(!r.ok){throw new Error((await r.text()).slice(0,300))}
+  return r.json();
+}
+
+// ---------- sysbar ----------
+// ---------- 监控栏（可配置）----------
+// 设置存在 localStorage，刷新页面保留；也支持同步到服务端 presets。
+const MON_KEY = 'video.monitor';
+let MON = { refresh: 15, enabled: ['gpu','gpu_temp','mem','comfy','llm'] };
+let MON_DEFS = [];   // 从 /api/presets 拿到的可选项
+let monTimer = null;
+
+function loadMonCfg(){
+  try{
+    const raw = localStorage.getItem(MON_KEY);
+    if(raw){ const v = JSON.parse(raw); if(v && v.enabled) MON = v; }
+  }catch(e){}
+}
+
+function renderMonItem(key, s){
+  const g=s.gpu, m=s.memory, c=s.cpu;
+  const dot = (ok)=>`<span class="dot ${ok?'ok':'bad'}"></span>`;
+  switch(key){
+    case 'gpu':
+      if(!g) return '';
+      return `<span title="显存占用">GPU <b>${(g.vram_used_mb/1024).toFixed(1)}/${(g.vram_total_mb/1024)|0}GB</b></span>`;
+    case 'gpu_temp':
+      if(!g||g.temp_c==null) return '';
+      return `<span title="GPU温度">🌡 <b style="color:${g.temp_c>=80?'var(--err)':g.temp_c>=70?'var(--warn)':'inherit'}">${g.temp_c}°C</b></span>`;
+    case 'gpu_util':
+      if(!g||g.util_pct==null) return '';
+      return `<span title="GPU利用率">GPU <b>${g.util_pct}%</b></span>`;
+    case 'cpu':
+      if(!c) return '';
+      return `<span title="CPU使用率 ${c.cores}核 负载${(c.load||[]).join('/')}">CPU <b>${c.pct??'-'}%</b></span>`;
+    case 'cpu_temp':
+      if(s.cpu_temp_c==null) return '';
+      const t=s.cpu_temp_c;
+      return `<span title="CPU温度">🌡CPU <b style="color:${t>=85?'var(--err)':t>=70?'var(--warn)':'inherit'}">${t}°C</b></span>`;
+    case 'mem':
+      if(!m) return '';
+      return `<span title="可用/总内存">内存 <b>${m.available_gb}GB</b> 可用</span>`;
+    case 'swap':
+      const sw=s.swap||{};
+      if(!sw.enabled) return `<span title="未启用 swap" style="color:var(--warn)">SWAP 未启用</span>`;
+      return `<span title="swap 使用">SWAP <b>${sw.pct}%</b> (${sw.used_gb}/${sw.total_gb}GB)</span>`;
+    case 'disk':
+      if(!s.disk) return '';
+      return `<span title="磁盘可用">磁盘 <b>${s.disk.free_gb}GB</b> 可用</span>`;
+    case 'disk_io':
+      const io=s.disk_io||{};
+      if(io.read_mbps==null) return '';
+      return `<span title="磁盘读写">💾 R ${io.read_mbps} / W ${io.write_mbps} MB/s</span>`;
+    case 'net':
+      const n=s.net||{};
+      if(n.rx_mbps==null) return '';
+      return `<span title="网络收发">🌐 ↓${n.rx_mbps} ↑${n.tx_mbps} Mbps</span>`;
+    case 'comfy':
+      return `<span>${dot(s.comfy.alive)}ComfyUI</span>`;
+    case 'llm':
+      const l=s.llm||{};
+      return `<span title="${esc(l.base_url||'')}">${dot(l.configured)}LLM <b>${esc(l.model||'-')}</b></span>`;
+    case 'queue':
+      return `<span title="渲染队列"><span id="monQueue">队列 -</span></span>`;
+    default: return '';
+  }
+}
+
+async function refreshSys(){
+  try{
+    const s = await api('/api/system');
+    window._lastSys = s;
+    const parts = (MON.enabled||[]).map(k=>renderMonItem(k,s)).filter(Boolean);
+    // 队列数
+    try{
+      const q = await api('/api/admin/comfy/queue');
+      const el = document.getElementById('monQueue');
+      if(el){
+        const n = (q.running||0)+(q.pending||0);
+        el.innerHTML = n?`<b style="color:var(--warn)">${n}</b>`:'<b>0</b>';
+      }
+    }catch(e){}
+    $('#sysbar').innerHTML = parts.join('');
+  }catch(e){
+    $('#sysbar').innerHTML = `<span class="dot bad"></span>${esc(e.message)}`;
+  }
+}
+
+function applyMonInterval(){
+  if(monTimer) clearInterval(monTimer);
+  monTimer = setInterval(refreshSys, Math.max(3, MON.refresh||15)*1000);
+}
+
+function openMonitorSettings(){
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const items = MON_DEFS.length ? MON_DEFS : [
+    {key:'gpu',zh:'显存占用'},{key:'gpu_temp',zh:'GPU温度'},{key:'gpu_util',zh:'GPU利用率'},
+    {key:'cpu',zh:'CPU使用率'},{key:'cpu_temp',zh:'CPU温度'},{key:'mem',zh:'内存'},
+    {key:'swap',zh:'SWAP'},{key:'disk',zh:'磁盘'},{key:'disk_io',zh:'磁盘IO'},
+    {key:'net',zh:'网络'},{key:'comfy',zh:'ComfyUI'},{key:'llm',zh:'LLM'},{key:'queue',zh:'渲染队列'},
+  ];
+  const mask = document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML = `<div class="modal" style="width:min(520px,100%)">
+    <h3>监控栏设置</h3>
+    <div class="hint" style="margin-bottom:12px">勾选要显示的项目，改完立即生效并保存到本机。</div>
+    <div class="row"><div><label>刷新间隔（秒，3-300）</label>
+      <input id="monR" type="number" min="3" max="300" value="${MON.refresh||15}"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0">
+      ${items.map(it=>`<label class="monchk">
+        <input type="checkbox" value="${it.key}" ${(MON.enabled||[]).includes(it.key)?'checked':''}>
+        ${esc(it.zh||it.key)}</label>`).join('')}
+    </div>
+    <div class="flex" style="margin-top:14px">
+      <button onclick="saveMonCfg()">保存</button>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+}
+
+function saveMonCfg(){
+  const refresh = Math.max(3, Math.min(300, +document.getElementById('monR').value||15));
+  const enabled = [...document.querySelectorAll('.monchk input:checked')].map(x=>x.value);
+  MON = { refresh, enabled };
+  try{ localStorage.setItem(MON_KEY, JSON.stringify(MON)) }catch(e){}
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  applyMonInterval(); refreshSys();
+  toast('监控栏已更新','ok');
+  // 异步同步到服务端（多设备一致）
+  api('/api/presets/monitor',{method:'PUT',
+    body:JSON.stringify({enabled, refresh_sec:refresh})}).catch(()=>{});
+}
+
+// ---------- projects ----------
+async function refreshAll(){
+  const d=await api('/api/projects?include_archived='+(S.showArchived?'true':'false'));
+  S.projects=d.projects;
+  S.selected.clear();
+  renderProjects(); refreshSys();
+}
+
+function toggleArchiveView(){
+  S.showArchived=!S.showArchived;
+  const b=$('#archBtn');
+  if(b){b.style.background=S.showArchived?'var(--panel2)':'';b.title=S.showArchived?'隐藏已归档':'显示已归档'}
+  refreshAll();
+}
+
+function renderProjects(){
+  const b=$('#projectList');
+  const q=($('#prjSearch')?.value||'').trim().toLowerCase();
+  let list=S.projects;
+  if(q) list=list.filter(p=>(p.title||'').toLowerCase().includes(q)
+                          ||(p.synopsis||'').toLowerCase().includes(q));
+
+  if(!list.length){
+    b.innerHTML=`<div class="muted" style="font-size:12px;padding:6px">${q?'无匹配项目':'暂无项目'}</div>`;
+    renderBatchBar(); return;
+  }
+
+  b.innerHTML=list.map(p=>{
+    const done=p.shot_stats?.done||0, total=p.shot_total||0;
+    const pct=total?Math.round(done*100/total):0;
+    const checked=S.selected.has(p.id);
+    return `<div class="prj ${S.project?.id===p.id?'active':''}" data-id="${p.id}">
+      <div class="flex" style="gap:6px;align-items:flex-start">
+        <input type="checkbox" ${checked?'checked':''} onclick="toggleSel(event,'${p.id}')"
+          style="width:14px;height:14px;margin-top:3px;flex:0 0 auto;cursor:pointer">
+        <div style="flex:1;min-width:0" onclick="openProject('${p.id}')">
+          <div class="t" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            ${p.archived?'📦 ':''}${esc(p.title)}</div>
+          <div class="m">${p.episode_count} 集 · ${stageName(p.stage)}${total?` · ${done}/${total} 镜`:''}</div>
+          ${total?`<div class="mini-bar"><div style="width:${pct}%"></div></div>`:''}
+        </div>
+        <button class="icon-btn" onclick="event.stopPropagation();prjMenu(event,'${p.id}')"
+          title="更多">⋯</button>
+      </div>
+    </div>`;
+  }).join('');
+  renderBatchBar();
+}
+
+function toggleSel(e,pid){
+  e.stopPropagation();
+  if(e.target.checked) S.selected.add(pid); else S.selected.delete(pid);
+  renderBatchBar();
+}
+
+function renderBatchBar(){
+  const bar=$('#batchBar'); if(!bar)return;
+  const n=S.selected.size;
+  if(!n){bar.style.display='none';bar.innerHTML='';return}
+  bar.style.display='block';
+  bar.innerHTML=`<div class="batchbar">
+    <span class="muted">已选 ${n}</span>
+    <button class="sm ghost" onclick="batchAct('archive')">归档</button>
+    <button class="sm ghost" onclick="batchAct('unarchive')">取消归档</button>
+    <button class="sm danger" onclick="batchAct('delete')">删除</button>
+    <button class="sm ghost" onclick="S.selected.clear();renderProjects()">清除</button>
+  </div>`;
+}
+
+async function batchAct(action){
+  const ids=[...S.selected];
+  if(!ids.length)return;
+  if(action==='delete'){
+    if(!confirm(`确认删除 ${ids.length} 个项目？\n\n数据与已生成的视频文件都会删除，不可恢复。`))return;
+  }
+  try{
+    const r=await api('/api/projects/batch',{method:'POST',
+      body:JSON.stringify({action,ids})});
+    toast(`已处理 ${r.affected} 个`, 'ok');
+    S.selected.clear();
+    if(action==='delete'&&S.project&&ids.includes(S.project.id)) S.project=null;
+    await refreshAll(); render();
+  }catch(e){toast(e.message,'err')}
+}
+
+function stageName(s){return (STAGES.find(x=>x[0]===s)||[null,s||'未知'])[1]}
+
+// 项目卡片「更多」菜单
+window.prjMenu=function(ev,pid){
+  ev.stopPropagation();
+  document.querySelectorAll('.ctx-menu').forEach(x=>x.remove());
+  const p=S.projects.find(x=>x.id===pid); if(!p)return;
+  const menu=document.createElement('div');
+  menu.className='ctx-menu';
+  menu.innerHTML=`
+    <div onclick="prjRename('${pid}')">✏️ 重命名</div>
+    <div onclick="prjDuplicate('${pid}')">📋 复制项目</div>
+    <div onclick="prjExport('${pid}')">📦 导出 ZIP</div>
+    <div onclick="prjArchive('${pid}',${!p.archived})">${p.archived?'♻️ 取消归档':'📥 归档'}</div>
+    <div class="sep"></div>
+    <div class="danger" onclick="prjDelete('${pid}')">🗑 删除项目</div>`;
+  const r=ev.target.getBoundingClientRect();
+  menu.style.left=Math.min(r.left, window.innerWidth-180)+'px';
+  menu.style.top=(r.bottom+4)+'px';
+  document.body.append(menu);
+  setTimeout(()=>document.addEventListener('click',()=>menu.remove(),{once:true}),0);
+};
+
+window.prjRename=async function(pid){
+  const p=S.projects.find(x=>x.id===pid); if(!p)return;
+  const t=prompt('新名称：',p.title); if(t===null||!t.trim())return;
+  await api('/api/projects/'+pid,{method:'PATCH',body:JSON.stringify({title:t.trim()})});
+  toast('已重命名','ok');
+  if(S.project?.id===pid) await openProject(pid); else await refreshAll();
+};
+
+window.prjDuplicate=async function(pid){
+  const p=S.projects.find(x=>x.id===pid); if(!p)return;
+  const t=prompt('副本名称：',p.title+' (副本)'); if(t===null)return;
+  toast('复制中…');
+  try{
+    const np=await api('/api/projects/'+pid+'/duplicate',{method:'POST',
+      body:JSON.stringify({title:t.trim()||undefined})});
+    toast('已复制','ok'); await refreshAll(); openProject(np.id);
+  }catch(e){toast(e.message,'err')}
+};
+
+window.prjArchive=async function(pid,archived){
+  try{
+    await api('/api/projects/'+pid+'/archive',{method:'POST',
+      body:JSON.stringify({archived})});
+    toast(archived?'已归档':'已取消归档','ok');
+    if(archived&&S.project?.id===pid){S.project=null;render()}
+    await refreshAll();
+  }catch(e){toast(e.message,'err')}
+};
+
+window.prjDelete=async function(pid){
+  const p=S.projects.find(x=>x.id===pid); if(!p)return;
+  const word=prompt(`删除「${p.title}」会同时删除所有已生成的视频，不可恢复。\n\n确认请输 DELETE：`);
+  if(word!=='DELETE')return toast('已取消');
+  try{
+    const r=await api('/api/projects/'+pid+'?purge_files=true',{method:'DELETE'});
+    toast(`已删除（清理 ${r.purged_files} 个文件）`,'ok');
+    if(S.project?.id===pid){S.project=null;render()}
+    await refreshAll();
+  }catch(e){toast(e.message,'err')}
+};
+
+window.prjExport=function(pid){
+  const a=document.createElement('a');
+  a.href='/api/projects/'+pid+'/export';
+  a.download='';
+  document.body.append(a); a.click(); a.remove();
+  toast('正在打包下载…');
+};
+
+async function newProject(){
+  const title=prompt('项目名称：'); if(!title||!title.trim())return;
+  const p=await api('/api/projects',{method:'POST',
+    body:JSON.stringify({title:title.trim()})});
+  await refreshAll(); openProject(p.id);
+}
+
+async function openProject(pid){
+  S.project=await api('/api/projects/'+pid);
+  S.stage=S.project.stage||'story';
+  S.episode=null;
+  if(S.project.episodes.length && S.stage!=='story') S.episode=S.project.episodes[0];
+  renderProjects(); render();
+}
+
+// ---------- main ----------
+// 渲染代次：每次 render() 自增。异步渲染函数在 await 之后检查代次，
+// 发现已被新一轮 render 取代就立刻放弃，避免操作已销毁的 DOM。
+// 2026-10-24 修：renderRender 里 `await renderComposer(ep)` 让出执行权后，
+// 监视栏/队列计时器触发的第二次 render() 会把 #main 清空重建，
+// 回来后 $('#vidGrid') 为 null → "Cannot set properties of null (setting 'innerHTML')"，
+// 同时导致组合成片面板看起来是 0 条目（其实是被下一轮覆盖了）。
+let RENDER_GEN = 0;
+
+function render(){
+  const gen = ++RENDER_GEN;
+  const m=$('#main');
+  if(!S.project){m.innerHTML='<div class="empty"><div class="big">🎬</div>选择或创建一个项目开始</div>';return}
+  const p=S.project;
+  m.innerHTML='';
+  m.insertAdjacentHTML('beforeend',`
+    <div class="card"><h2>${esc(p.title)}
+      <span class="tag">${esc(p.aspect||'9:16')}</span>
+      <span class="tag">${stageName(p.stage)}</span>
+      <span class="muted" style="margin-left:auto;font-size:12px">${esc(p.style||'未设风格')}</span>
+    </h2>
+    ${p.synopsis?`<div class="muted" style="font-size:13px;margin-bottom:10px">${esc(p.synopsis)}</div>`:''}
+    <div class="grid3">
+      <div class="stat"><div class="v">${p.episodes.length}</div><div class="k">集数</div></div>
+      <div class="stat"><div class="v">${p.stats.total}</div><div class="k">镜头总数</div></div>
+      <div class="stat"><div class="v">${p.stats.by_status?.done||0}</div><div class="k">已完成</div></div>
+      <div class="stat"><div class="v">${(p.stats.total_duration_s/60).toFixed(1)}</div><div class="k">总时长（分）</div></div>
+    </div></div>`);
+
+  // 步骤条
+  const idx = STAGES.findIndex(x=>x[0]===S.stage);
+  m.insertAdjacentHTML('beforeend',`<div class="steps">${
+    STAGES.map(([k,l],i)=>{
+      const done = i < (p.stage==='done'?5:idx);
+      const active = k===S.stage;
+      return `<div class="step ${done?'done':''} ${active?'active':''}" onclick="goStage('${k}')">
+        <div class="n">${done?'✓':i+1}</div><div class="l">${l}</div></div>`;
+    }).join('')}</div>`);
+
+  const body=document.createElement('div'); m.append(body);
+  // 同步渲染的阶段直接返回；异步阶段交给各自的代次守卫
+  if(S.stage==='story') return renderStory(body,p);
+  if(S.stage==='outline') return renderOutline(body,p);
+  if(S.stage==='locked') return renderLocked(body,p,gen);
+  if(S.stage==='storyboard') return renderStoryboard(body,p);
+  if(S.stage==='render') return renderRender(body,p,gen);
+  if(S.stage==='done') return renderRender(body,p,gen);
+}
+window.goStage=async function(k){
+  const idx=STAGES.findIndex(x=>x[0]===S.stage);
+  const want=STAGES.findIndex(x=>x[0]===k);
+  if(want>idx+0 && !S.project.stage) return toast('请先完成前面的步骤','err');
+
+  // 进入分镜/渲染阶段时必须有一集被选中，否则镜头/队列都是空的
+  if((k==='storyboard'||k==='render') && !S.episode){
+    const eps=S.project.episodes||[];
+    if(eps.length){
+      S.episode=await api('/api/episodes/'+eps[0].id);
+    }
+  }
+  S.stage=k; render();
+};
+
+// ============ 1. 输入故事 ============
+function renderStory(m,p){
+  const styles = (window._styles||[]);
+  m.innerHTML=`
+  <div class="card"><h2>① 输入故事 <span class="tag">素材来源</span></h2>
+    <div class="hint" style="margin-bottom:10px">
+      小说片段、故事梗概、一句话创意都行。下一步会用它编成剧集大纲。
+    </div>
+
+    <div class="row">
+      <div><label>项目英文名（用于输出目录）</label>
+        <div class="flex">
+          <input id="slugBox" value="${esc(p.slug||'')}" placeholder="留空自动生成，如 xingkuang-zhuixu"
+            style="flex:1">
+          <button class="sm ghost" onclick="genSlug()" title="由项目名翻译生成">翻译</button>
+        </div></div>
+    </div>
+
+    <div class="row"><div><label>故事素材</label>
+      <textarea id="storyBox" rows="12" class="storybox" placeholder="例：
+林晚在天台等江辞。江辞来了，她质问为什么背叛她。
+江辞沉默，转身看向城市灯火。林晚笑了，眼泪掉下来。">${esc(p.story||'')}</textarea>
+    </div></div>
+
+    <div class="row">
+      <div><label>视觉风格（选预设，或直接改中文）</label>
+        <select id="stylePreset" onchange="applyStylePreset()">
+          <option value="">— 自定义 / 不套用 —</option>
+          ${styles.map(x=>`<option value="${esc(x.render||x.zh)}" data-zh="${esc(x.zh)}">
+            ${esc(x.zh)} — ${esc((x.render||x.en||'').slice(0,36))}</option>`).join('')}
+        </select>
+        <div class="hint" id="styleZhHint" style="margin-top:4px">
+          ${p.style_zh?`当前：${esc(p.style_zh)}`:'未选择'}
+        </div>
+      </div>
+      <div><label>风格提示词（中文，直接进渲染）</label>
+        <input id="styleBox" oninput="document.getElementById('styleZhHint').textContent='已手动编辑'"
+          value="${esc(p.style_zh||p.style||'现代都市写实风格，电影感，自然光，浅景深，35mm 胶片颗粒')}"></div>
+    </div>
+
+    <div class="row">
+      <div><label>画面方向</label>
+        <select id="orientSel" onchange="applyOrientation()">
+          <option value="portrait" ${(p.orientation||'portrait')==='portrait'?'selected':''}>竖屏 9:16（抖音/快手/红果/视频号）</option>
+          <option value="landscape" ${p.orientation==='landscape'?'selected':''}>横屏 16:9（B站/YouTube）</option>
+        </select>
+        <div class="hint" style="margin-top:4px" id="orientHint"></div>
+      </div>
+      <div><label>平台规格（影响画幅/帧率/超分默认档）</label>
+        <select id="platSel">
+          <option value="">— 不套用 —</option>
+          ${(window._platforms||[]).map(x=>`<option value="${esc(x.id)}">
+            ${esc(x.zh)} · ${x.orientation==='landscape'?'横':'竖'} · ${(x.base&&x.base.width)||x.width}×${(x.base&&x.base.height)||x.height}</option>`).join('')}
+        </select></div>
+      <div class="fixed" style="align-self:flex-end">
+        <button class="sm ghost" onclick="applyPlatform()">应用规格</button></div>
+    </div>
+
+    <div class="row">
+      <div><label>拆成几集（不设上限）</label>
+        <input id="epCount" type="number" min="1"
+          value="${(p.episodes&&p.episodes.length)||3}"></div>
+      <div class="fixed" style="align-self:flex-end"><button onclick="doOutline()">下一步：编大纲 →</button></div>
+    </div>
+  </div>`;
+}
+
+window.applyStylePreset=function(){
+  const sel=$('#stylePreset');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt || !opt.value) return;
+  $('#styleBox').value = opt.value;
+  $('#styleZhHint').textContent = '已选：' + (opt.dataset.zh||'');
+};
+
+window.applyOrientation=async function(){
+  const v=$('#orientSel').value;
+  try{
+    const r=await api('/api/presets/platform',{method:'POST',
+      body:JSON.stringify({orientation:v})});
+    const a=r.assemble||{};
+    $('#orientHint').textContent=`成片画布 ${a.width}×${a.height} · ${a.fps}fps`;
+    toast('已切换为'+(v==='landscape'?'横屏 16:9':'竖屏 9:16'),'ok');
+    if(S.project) await openProject(S.project.id);
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.applyPlatform=async function(){
+  const pid=$('#platSel').value;
+  if(!pid) return toast('先选一个平台','err');
+  try{
+    const r=await api('/api/presets/platform',{method:'POST',
+      body:JSON.stringify({platform_id:pid})});
+    const a=r.assemble||{};
+    toast(`已应用：${a.width}×${a.height} / ${a.fps}fps`,'ok');
+    await openProject(S.project.id);
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.genSlug=async function(){
+  const t = (S.project && S.project.title) || '';
+  if(!t) return toast('项目没有名称','err');
+  const btn = event.target; btn.disabled=true; btn.textContent='…';
+  try{
+    const r = await api('/api/translate',{method:'POST',
+      body:JSON.stringify({text:t, kind:'slug'})});
+    $('#slugBox').value = r.result;
+    toast('英文名：'+r.result,'ok');
+  }catch(e){ toast('翻译失败: '+e.message,'err') }
+  finally{ btn.disabled=false; btn.textContent='翻译' }
+};
+window.doOutline=async function(){
+  const story=$('#storyBox').value.trim();
+  if(!story)return toast('故事不能为空','err');
+  const btn=event.target; btn.disabled=true; btn.textContent='LLM 编制中…';
+
+  // 先把 slug / 风格存下来（重命名会同步改输出目录）
+  const slug = ($('#slugBox').value||'').trim();
+  const style = ($('#styleBox').value||'').trim();
+  const sel = $('#stylePreset');
+  const styleZh = (sel && sel.selectedIndex>0) ? (sel.options[sel.selectedIndex].dataset.zh||'') : '';
+  try{
+    const patch = {title: S.project.title, style, style_zh: styleZh};
+    if(slug && slug !== (S.project.slug||'')) patch.slug = slug;
+    await api('/api/projects/'+S.project.id,{method:'PATCH',body:JSON.stringify(patch)});
+  }catch(e){
+    toast('保存基础设置失败: '+e.message,'err');
+    btn.disabled=false; btn.textContent='下一步：编大纲 →';
+    return;
+  }
+
+  try{
+    const r=await api(`/api/projects/${S.project.id}/outline`,{method:'POST',
+      body:JSON.stringify({story,style,episode_count:+$('#epCount').value||3})});
+    toast('大纲已生成','ok');
+    await openProject(S.project.id); S.stage='outline'; render();
+  }catch(e){toast('失败: '+e.message,'err');btn.disabled=false;btn.textContent='下一步：编大纲 →'}
+};
+
+// ============ 2. 剧情大纲 ============
+function renderOutline(m,p){
+  const o=p.outline||{};
+  const eps=o.episodes||[];
+  m.innerHTML=`
+  <div class="card"><h2>② 剧情及大纲编制 <span class="tag">${eps.length} 集</span></h2>
+    ${o.logline?`<div class="muted" style="margin-bottom:12px">${esc(o.logline)}</div>`:''}
+    <div class="row">
+      <div><label>剧名</label><input id="oT" value="${esc(o.title||p.title)}"></div>
+      <div><label>题材</label><input id="oG" value="${esc(o.genre||'')}"></div>
+      <div><label>基调</label><input id="oTone" value="${esc(o.tone||'')}"></div>
+    </div>
+    ${eps.length?`<div class="epscroll">
+      ${eps.map((e,i)=>`
+      <div class="ep">
+        <div class="h">
+          <span class="epnum">${e.seq||i+1}</span>
+          ${esc(e.title||'')}
+          ${e.hook?`<span class="tag" style="margin-left:6px">钩子</span>`:''}
+        </div>
+        ${e.hook?`<div class="b"><b>钩子</b>：${esc(e.hook)}</div>`:''}
+        ${e.conflict?`<div class="b"><b>冲突</b>：${esc(e.conflict)}</div>`:''}
+        ${e.summary?`<div class="b">${esc(e.summary)}</div>`:''}
+        ${e.cliffhanger?`<div class="b"><b>悬念</b>：${esc(e.cliffhanger)}</div>`:''}
+      </div>`).join('')}
+    </div>`:'<div class="muted">没有大纲，请返回上一步</div>'}
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="S.stage='story';render()">← 重新输入故事</button>
+      <button onclick="S.stage='locked';render()">下一步：锁定基础信息 →</button>
+    </div>
+  </div>`;
+}
+
+// ============ 3. 锁定基础信息 ============
+// 重新让 LLM 抽取（力刷缓存）。默认进锁定页直接用已锁定的基准，不再调 LLM
+window.reExtractBaseinfo=function(){
+  window._forceBaseinfo=true;
+  render();
+};
+
+async function renderLocked(m,p,gen){
+  m.innerHTML='<div class="card"><h2>③ 锁定基础信息</h2><div class="muted">加载中…</div></div>';
+  let base=null;
+  const force = !!window._forceBaseinfo;
+  window._forceBaseinfo = false;
+  try{ base=await api(`/api/projects/${p.id}/extract-baseinfo`,{method:'POST',body:JSON.stringify(force?{force:true}:{})}); }
+  catch(e){ base={baseinfo:{characters:p.characters||[],locations:p.locations||[],props:p.props||[],visual_style:p.style||'',aspect:p.aspect||'9:16',forbidden:[]}}; }
+  if(gen!==undefined && gen!==RENDER_GEN) return;   // 已被新一轮 render 取代
+
+  const bi=base.baseinfo||{};
+  const chars=p.characters.length?p.characters:bi.characters||[];
+  const locs=p.locations.length?p.locations:(bi.locations||[]);
+  const props=p.props.length?p.props:(bi.props||[]);
+  const locked=p.locked_info;
+  const styles = window._styles||[];
+
+  m.innerHTML=`
+  <div class="card"><h2>③ 锁定基础信息 <span class="tag">${locked?'已锁定':'LLM 建议，请确认'}</span></h2>
+    <div class="hint" style="margin-bottom:12px">
+      这些是后续所有分镜的共同基准。锁定后分镜会强制沿用，
+      保证人物和风格不跑偏。<b>中文描述给人看，英文锚点进模型。</b>
+    </div>
+
+    <div class="flex" style="margin-bottom:10px">
+      <button class="sm ghost" onclick="openLibPicker()">📚 从角色库导入</button>
+      <button class="sm ghost" onclick="saveAllToLib()">💾 存到角色库</button>
+      <button class="sm ghost" onclick="openLibManager()">👤 角色库管理</button>
+      <button class="sm ghost" onclick="reExtractBaseinfo()" title="让 LLM 重新分析剧本（约 7 秒）">🔄 重新抽取</button>
+      <span class="hint" style="margin-left:6px">角色库是全局的（跨项目共用），右上角 👤 也可打开</span>
+    </div>
+
+    <label>角色</label>
+    <div id="charBox">${chars.map((c,i)=>charCard(c,i)).join('')}</div>
+    <button class="sm ghost" onclick="addCharRow()">+ 加角色</button>
+
+    <div class="row" style="margin-top:16px">
+      <div><label>主要场景（逗号分隔）</label>
+        <input id="locBox" value="${esc(locs.map(x=>x.name||x).join('，'))}"></div>
+    </div>
+
+    <div class="row">
+      <div><label>风格预设</label>
+        <select id="vsPreset" onchange="applyLockStyle()">
+          <option value="">— 从预设选 —</option>
+          ${styles.map(x=>`<option value="${esc(x.render||x.en||'')}" data-zh="${esc(x.zh)}">${esc(x.zh)}</option>`).join('')}
+        </select></div>
+      <div style="flex:2"><label>渲染提示词（中文）</label>
+        <textarea id="vsBox" rows="2" style="width:100%;resize:vertical">${esc(locked?.visual_style||bi.visual_style||p.style||'')}</textarea></div>
+    </div>
+
+    <div class="row">
+      <div><label>时代/年代</label><input id="eraBox" value="${esc(locked?.era||bi.era||'')}"></div>
+      <div><label>画幅</label><input id="aspectBox" value="${esc(locked?.aspect||bi.aspect||p.aspect||'9:16')}"></div>
+      <div><label>禁止出现（逗号分隔）</label>
+        <input id="forbidBox" value="${esc((locked?.forbidden||bi.forbidden||[]).join('，'))}"></div>
+    </div>
+
+    <div class="flex" style="margin-top:14px">
+      <button class="ghost" onclick="S.stage='outline';render()">← 返回大纲</button>
+      <button onclick="doLock()">🔒 锁定并进入分镜</button>
+    </div>
+  </div>`;
+}
+
+/** 单个角色卡片（中英双输入 + 参考图 + 翻译按钮） */
+function charCard(c, i){
+  const ref = c.ref_image||'';
+  return `<div class="charline" data-idx="${i}">
+    <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+      <div class="flex">
+        <input class="c-name" style="width:110px" value="${esc(c.name||'')}" placeholder="中文名">
+        <input class="c-nameen" style="width:110px" value="${esc(c.name_en||'')}" placeholder="英文名">
+        <button class="sm ghost" onclick="translateChar(this)" title="中译英">→</button>
+        <span style="flex:1"></span>
+        <button class="sm ghost" onclick="this.closest('.charline').remove()">✕</button>
+      </div>
+      <input class="c-appzh" value="${esc(c.appearance_zh||'')}"
+        placeholder="中文描述：26岁中国女性，黑色长直发，米色风衣">
+      <input class="c-app" value="${esc(c.appearance||'')}"
+        placeholder="English anchor: 26-year-old Chinese woman, long black hair, beige trench coat">
+      <div class="flex">
+        <label class="sm ghost" style="cursor:pointer;padding:4px 10px;border:1px solid var(--line);border-radius:6px">
+          📷 上传参考图
+          <input type="file" accept="image/*" style="display:none"
+            onchange="uploadRef(this)">
+        </label>
+        <span class="c-refpath mono muted" style="font-size:11px">${esc(ref)}</span>
+        ${ref?`<img src="/api/uploads/${esc(ref.split('/').pop())}"
+          style="height:44px;border-radius:4px;border:1px solid var(--line)">`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+window.applyLockStyle=function(){
+  const sel=$('#vsPreset'); const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value) return;
+  $('#vsBox').value=opt.value;
+};
+
+window.addCharRow=function(){
+  const box=$('#charBox');
+  const idx=box.children.length;
+  const d=document.createElement('div');
+  d.innerHTML=charCard({}, idx);
+  box.append(d.firstElementChild);
+};
+
+window.translateChar=async function(btn){
+  const row=btn.closest('.charline');
+  const zh=row.querySelector('.c-appzh').value.trim();
+  const name=row.querySelector('.c-name').value.trim();
+  if(!zh && !name) return toast('先填中文描述','err');
+  btn.disabled=true; btn.textContent='…';
+  try{
+    if(!row.querySelector('.c-nameen').value && name){
+      const r1=await api('/api/translate',{method:'POST',
+        body:JSON.stringify({text:name, kind:'slug'})});
+      row.querySelector('.c-nameen').value=r1.result;
+    }
+    const r=await api('/api/translate',{method:'POST',
+      body:JSON.stringify({text:zh||name, kind:'text'})});
+    row.querySelector('.c-app').value=r.result;
+    toast('已翻译','ok');
+  }catch(e){ toast('翻译失败: '+e.message,'err') }
+  finally{ btn.disabled=false; btn.textContent='→' }
+};
+
+window.uploadRef=async function(input){
+  const f=input.files && input.files[0];
+  if(!f) return;
+  const row=input.closest('.charline');
+  const fd=new FormData(); fd.append('file', f);
+  try{
+    const r=await fetch('/api/upload?kind=ref',{method:'POST',body:fd});
+    if(!r.ok) throw new Error(await r.text());
+    const d=await r.json();
+    const path=d.files[0].path;
+    row.querySelector('.c-refpath').textContent=path;
+    let img=row.querySelector('img');
+    if(!img){
+      img=document.createElement('img');
+      img.style.cssText='height:44px;border-radius:4px;border:1px solid var(--line)';
+      row.querySelector('.c-refpath').after(img);
+    }
+    img.src='/api/uploads/'+path.split('/').pop();
+    toast('参考图已上传','ok');
+  }catch(e){ toast('上传失败: '+e.message,'err') }
+};
+
+window.openLibPicker=async function(){
+  let list=[];
+  try{ list=(await api('/api/character-lib')).characters; }
+  catch(e){ return toast(e.message,'err') }
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal">
+    <h3>从角色库导入（${list.length} 个）</h3>
+    ${list.length?`<div style="max-height:420px;overflow-y:auto">
+      ${list.map(c=>`<label class="charline" style="cursor:pointer">
+        <input type="checkbox" class="libpick" value="${c.id}" style="width:16px;margin-top:4px">
+        <div class="body">
+          <b>${esc(c.name)}</b> ${c.name_en?`<span class="muted">(${esc(c.name_en)})</span>`:''}
+          <div class="muted" style="font-size:11px">${esc((c.appearance||'').slice(0,90))}</div>
+        </div>
+        ${c.ref_image?`<img src="/api/uploads/${esc((c.ref_image||'').split('/').pop())}"
+          style="height:38px;border-radius:4px">`:''}
+      </label>`).join('')}
+    </div>`:'<div class="muted">角色库还是空的</div>'}
+    <div class="flex" style="margin-top:14px">
+      <button onclick="doImportChars()">导入选中</button>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+};
+
+window.doImportChars=async function(){
+  const ids=[...document.querySelectorAll('.libpick:checked')].map(x=>x.value);
+  if(!ids.length) return toast('没选角色','err');
+  try{
+    const r=await api('/api/projects/'+S.project.id+'/import-characters',
+      {method:'POST',body:JSON.stringify({lib_ids:ids})});
+    toast(`导入 ${r.imported} 个`,'ok');
+    document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+    await openProject(S.project.id); S.stage='locked'; render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.saveAllToLib=async function(){
+  try{
+    const r=await api('/api/projects/'+S.project.id+'/save-to-lib',
+      {method:'POST',body:JSON.stringify({})});
+    toast(`已存 ${r.saved} 个到角色库`,'ok');
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.doLock=async function(){
+  const chars=[...document.querySelectorAll('#charBox .charline')].map(row=>{
+    const q=(sel)=>row.querySelector(sel);
+    return {
+      name:(q('.c-name')?.value||'').trim(),
+      name_en:(q('.c-nameen')?.value||'').trim(),
+      appearance_zh:(q('.c-appzh')?.value||'').trim(),
+      appearance:(q('.c-app')?.value||'').trim(),
+      ref_image:(q('.c-refpath')?.textContent||'').trim(),
+    };
+  }).filter(c=>c.name);
+
+  const body={
+    characters: chars,
+    locations: $('#locBox').value.split(/[，,]/).map(s=>s.trim()).filter(Boolean).map(n=>({name:n})),
+    props: [],
+    visual_style: $('#vsBox').value.trim(),
+    visual_style_zh: $('#vsBox').value.trim(),
+    aspect: $('#aspectBox').value.trim(),
+    era: $('#eraBox').value.trim(),
+    forbidden: $('#forbidBox').value.split(/[，,]/).map(s=>s.trim()).filter(Boolean),
+  };
+  try{
+    await api(`/api/projects/${S.project.id}/lock`,{method:'POST',body:JSON.stringify(body)});
+    toast('已锁定，可以生成分镜了','ok');
+    await openProject(S.project.id); S.stage='storyboard'; render();
+  }catch(e){toast('锁定失败: '+e.message,'err')}
+};
+
+// ============ 4. 分镜头脚本 ============
+function renderStoryboard(m,p){
+  const eps=p.episodes||[];
+  if(!eps.length){m.innerHTML='<div class="card"><h2>④ 分镜头脚本</h2><div class="muted">还没有剧集，请先完成大纲</div></div>';return}
+  const cur=S.episode||eps[0]; S.episode=cur;
+
+  m.innerHTML=`
+  <div class="card"><h2>④ 分镜头脚本 <span class="tag">${eps.length} 集</span>
+    <span class="flex" style="margin-left:auto;gap:6px">
+      <button class="sm ghost" onclick="storyboardAll()" title="本项目所有还没镜头的集，按当前模式一次生成完（后台跑）">⚡ 全剧批量分镜</button>
+      <button class="sm ghost" onclick="enqueueAll('${p.id}')" title="已有镜头的集全部入渲染队列">⏳⏳ 全部集入队</button>
+    </span></h2>
+    <div class="flex" style="margin-bottom:12px">
+      ${eps.map(e=>`<button class="${cur.id===e.id?'':'ghost'} sm"
+        onclick="pickEp('${e.id}')">第${e.seq}集 ${esc(e.title||'').slice(0,10)}
+        ${e.engine_mode?`<span class="eng ${e.engine_mode==='auto'?'':e.engine_mode}" style="margin-left:5px">${e.engine_mode==='auto'?'自动':e.engine_mode.toUpperCase()}</span>`:''}
+        </button>`).join('')}
+    </div>
+    <div class="row"><div><label>本集剧本（可编辑）</label>
+      <textarea id="scriptBox" rows="8">${esc(cur.script||cur.summary||'')}</textarea></div></div>
+    <div class="row">
+      <div><label>渲染引擎</label>
+        <div class="hint" style="padding:8px 10px;background:var(--panel2);border-radius:6px">
+          <b>MiniMax H3（唯一引擎）</b> · 每镜一次出画面 + 原生立体声对白 + 音效
+          <br>分镜会按 H3 的能力拆：有台词必填 dialogue、人物发声写进 sfx、机位能看到嘴部。
+          单镜约 13-15 分钟（720p / 8 步）。
+        </div>
+      </div>
+      <div class="fixed" style="align-self:flex-end">
+        <button class="sm ghost" onclick="localizeEp('${cur.id}')" title="把这一集里英文的分镜提示词批量翻成中文（不重新生成分镜）">🀄 本集转中文</button>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>最多镜头数</label><input id="maxShots" type="number" value="30"></div>
+      <div><label>目标时长（秒）</label><input id="targetDur" type="number" placeholder="90"></div>
+      <div class="fixed" style="align-self:flex-end"><button onclick="doStoryboard()">生成分镜</button></div>
+    </div>
+    <div id="sbOut"></div>
+  </div>`;
+
+  api('/api/episodes/'+cur.id).then(ep=>{
+    const shots=ep.plan||[];
+    const s=ep.summary||{};
+    const out=$('#sbOut');
+    if(!shots.length){out.innerHTML='<div class="muted" style="margin-top:12px">该集还没有镜头，点上面「生成分镜」</div>';return}
+    out.innerHTML=`
+      <div class="flex" style="margin:12px 0">
+        <span class="pill h3">H3 ${s.h3||0}</span>
+        <span class="muted">预计 ${s.estimated_minutes||0} 分钟</span>
+        ${(()=>{
+          const fd=(ep.shots||[]).filter(x=>x.status==='failed').length;
+          return fd?`<button class="sm ghost" onclick="resetShots('${ep.id}','failed')">↻ 重置 ${fd} 个失败</button>`:'';
+        })()}
+        <button class="sm" style="margin-left:auto" onclick="goRender('${ep.id}')">进入渲染 →</button>
+        <button class="sm ghost" onclick="enqueueEp('${ep.id}')" title="加入渲染队列，后台跑，你可以继续做下一集分镜">⏳ 加入渲染队列</button>
+      </div>
+      <table><thead><tr>
+        <th>#</th><th>场</th><th>状态</th><th>引擎</th><th>时长</th><th>景别</th>
+        <th>提示词</th><th>对白（说话人）</th><th>耗时</th><th>操作</th></tr></thead>
+      <tbody>${shots.map(sh=>{
+        const r=sh._route||{};
+        const st=sh.status||'pending';
+        const dur=sh.duration_ms?`${(sh.duration_ms/1000).toFixed(0)}s`:'-';
+        const bad=(st==='failed'&&sh.error)?`
+          <div class="errbox" title="${esc(sh.error)}" onclick="showErr('${sh.id}')">
+            ⚠ ${esc(humanErr(sh.error))}</div>`:'';
+        const canPreview=(st==='done'&&sh.output_path);
+        const scName=(()=>{
+          const sc=(ep.scenes||[]).find(x=>Number(x.id)===Number(sh.scene_id));
+          return sc?sc.name:(sh.scene_id?('场'+sh.scene_id):'-');
+        })();
+        return `<tr>
+          <td class="mono">${sh.seq}</td>
+          <td class="muted" style="font-size:11px" title="${esc(scName)}">${sh.scene_id||'-'}</td>
+          <td><span class="pill ${st}">${stName(st)}</span>${bad}</td>
+          <td><span class="eng ${r.engine||''}" title="${esc(r.reason||'')}">${(r.engine||'?').toUpperCase()}</span></td>
+          <td class="mono">${sh.duration}s</td>
+          <td class="muted" style="font-size:12px">${esc(sh.shot_size||'')}</td>
+          <td class="muted" style="font-size:11.5px;max-width:260px">${esc((sh.prompt||'').slice(0,80))}</td>
+          <td style="font-size:12px">${sh.dialogue?esc(sh.dialogue.slice(0,14)):''}
+            ${sh.dialogue?`<div class="muted" style="font-size:10.5px">${sh.speaker?esc(sh.speaker):'<span style="color:var(--warn)">缺说话人</span>'}</div>`:''}</td>
+          <td class="mono muted">${dur}</td>
+          <td style="white-space:nowrap">
+            <button class="sm ghost" onclick="editShot('${sh.id}')" title="编辑">改</button>
+            ${canPreview?`<button class="sm ghost" onclick="previewShot('${sh.id}')" title="预览">▶</button>`:''}
+            <button class="sm ghost" onclick="rerenderShot('${sh.id}',this)"
+              title="重渲这一镜">${st==='done'?'↻':'▶▷'}</button>
+            <button class="sm ghost" onclick="moveShot('${sh.id}','up')" title="上移">↑</button>
+            <button class="sm ghost" onclick="moveShot('${sh.id}','down')" title="下移">↓</button>
+            <button class="sm ghost" onclick="delShot('${sh.id}')" title="删除">✕</button>
+          </td>
+        </tr>`}).join('')}</tbody></table>
+      ${(ep.scenes||[]).length?`<div style="margin-top:12px">
+        <div class="hint" style="margin-bottom:6px">场次卡（同场次镜头共用，保证场景不漂移）</div>
+        <div class="flex" style="gap:8px;flex-wrap:wrap">
+          ${(ep.scenes||[]).map(sc=>`<div class="stat" style="min-width:220px;max-width:340px">
+            <b style="font-size:12.5px">场${sc.id} · ${esc(sc.name||'')}</b>
+            ${sc.desc?`<div class="muted" style="font-size:11px;margin-top:3px">${esc(sc.desc.slice(0,90))}</div>`:''}
+            ${sc.light?`<div class="muted" style="font-size:11px">光：${esc(sc.light.slice(0,60))}</div>`:''}
+          </div>`).join('')}
+        </div>
+      </div>`:''}
+      <div class="flex" style="margin-top:10px">
+        <button class="sm ghost" onclick="addShot('${ep.id}')">+ 手工加镜头</button>
+        <button class="sm ghost" onclick="resetShots('${ep.id}','all')">↻ 全部重置</button>
+        <button class="sm ghost" onclick="makePortraits('${p.id}','shots')"
+          title="从已渲染镜头里抽一帧当定妆照（秒级，免费）">🎭 定妆照（抽帧）</button>
+        <button class="sm ghost" onclick="makePortraits('${p.id}','generate')"
+          title="用 H3 生成定妆镜头再抽首帧（约 13 分钟/人）">🎭 定妆照（生成）</button>
+        <span class="hint">唯一引擎 MiniMax H3（画面 + 原生对白 + 音效）</span>
+      </div>`;
+  }).catch(e=>{$('#sbOut').innerHTML=`<div class="log">${esc(e.message)}</div>`});
+}
+window.pickEp=function(eid){ S.episode={id:eid}; api('/api/episodes/'+eid).then(e=>{S.episode=e;render()}) };
+
+/** 给项目角色生成定妆照（Ref2VA 的前置素材）。source=shots|generate */
+window.makePortraits=async function(pid, source){
+  const tip = source==='generate'
+    ? '用 H3 生成定妆镜头再抽首帧，每人约 13 分钟，会占住 GPU。继续？'
+    : '从已渲染镜头里抽一帧当定妆照（秒级，免费，长相与成片一致）。继续？';
+  if(!confirm(tip)) return;
+  try{
+    const r=await api(`/api/projects/${pid}/portraits`,{method:'POST',
+      body:JSON.stringify({source})});
+    toast(`开始生成 ${r.characters} 个角色的定妆照`);
+    S.handledTasks.delete(r.task_id);
+    document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+    const mask=document.createElement('div'); mask.className='modal-mask';
+    mask.innerHTML=`<div class="modal" style="width:min(720px,100%)">
+      <h3>定妆照生成</h3><div id="taskBox"></div>
+      <div class="flex" style="margin-top:12px">
+        <button class="ghost" onclick="this.closest('.modal-mask').remove()">后台运行/关闭</button></div></div>`;
+    document.body.append(mask);
+    pollTask(r.task_id);
+  }catch(e){ toast(e.message,'err') }
+};
+
+/** 把一集里英文分镜批量转中文（不重拆分镜，保留台词与镜头顺序）。 */
+window.localizeEp=async function(eid){
+  if(!confirm('把本集英文的分镜提示词批量翻成中文？\n不重新生成分镜、不改台词、不动已渲染的镜头。')) return;
+  try{
+    const r=await api(`/api/episodes/${eid}/localize?scope=all`,{method:'POST'});
+    toast('开始转换…');
+    S.handledTasks.delete(r.task_id);
+    document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+    const mask=document.createElement('div'); mask.className='modal-mask';
+    mask.innerHTML=`<div class="modal" style="width:min(700px,100%)">
+      <h3>批量转中文</h3><div id="taskBox"></div>
+      <div class="flex" style="margin-top:12px">
+        <button class="ghost" onclick="this.closest('.modal-mask').remove()">后台运行/关闭</button></div></div>`;
+    document.body.append(mask);
+    pollTask(r.task_id);
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.doStoryboard=async function(){
+  const ep=S.episode; if(!ep){return toast('请先选剧集','err')}
+  const btn=event.target; btn.disabled=true; btn.textContent='LLM 拆分中…';
+  try{
+    await api(`/api/episodes/${ep.id}/storyboard`,{method:'POST',body:JSON.stringify({
+      script:$('#scriptBox').value, style:S.project.style||'',
+      max_shots:+$('#maxShots').value, target_duration:+(+$('#targetDur').value||0)})});
+    toast('分镜已生成（H3 · 中文）','ok'); await openProject(S.project.id);
+    S.stage='storyboard'; S.episode=S.project.episodes.find(e=>e.id===ep.id); render();
+  }catch(e){toast('失败: '+e.message,'err');btn.disabled=false;btn.textContent='生成分镜'}
+};
+
+window.storyboardAll=async function(){
+  const maxShots=+($('#maxShots')?.value||30);
+  const td=+(+($('#targetDur')?.value||0));
+  const eps=(S.project.episodes||[]);
+  const todo=eps.filter(e=>(e.shot_total||0)===0).length;
+  if(!todo) return toast('所有集都已有镜头了（要重建请单独在该集点「生成分镜」）','err');
+  if(!confirm(`给 ${todo} 个还没镜头的集批量生成分镜？\n引擎：MiniMax H3 · 中文提示词\n后台跑，每集约几十秒。`)) return;
+  try{
+    const r=await api(`/api/projects/${S.project.id}/storyboard-all`,{method:'POST',
+      body:JSON.stringify({max_shots:maxShots, target_duration:td,
+        only_empty:true})});
+    toast(`已开始，共 ${r.count} 集`,'ok');
+    S.handledTasks.delete(r.task_id);
+    document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+    const mask=document.createElement('div'); mask.className='modal-mask';
+    mask.innerHTML=`<div class="modal" style="width:min(700px,100%)">
+      <h3>批量分镜中…</h3><div id="taskBox"></div>
+      <div class="flex" style="margin-top:12px">
+        <button class="ghost" onclick="this.closest('.modal-mask').remove()">后台运行/关闭</button></div></div>`;
+    document.body.append(mask);
+    pollTask(r.task_id);
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.enqueueEp=async function(eid){
+  try{
+    const r=await api('/api/queue',{method:'POST',body:JSON.stringify({
+      episode_id:eid})});
+    toast(`已加入渲染队列（${r.queued?.length||0} 项）`,'ok');
+  }catch(e){ toast(e.message,'err') }
+};
+window.editShot=async function(sid){
+  const ep=await api('/api/episodes/'+S.episode.id);
+  const sh=(ep.plan||ep.shots||[]).find(x=>x.id===sid);
+  if(!sh) return toast('镜头不存在','err');
+  const pr=prompt('画面提示词：',sh.prompt); if(pr===null)return;
+  const du=prompt('时长（秒）：',sh.duration); if(du===null)return;
+  const dl=prompt('台词（留空=无台词）：',sh.dialogue||''); if(dl===null)return;
+  const sp=prompt('说话人（台词为空时忽略）：',sh.speaker||'');
+  if(sp===null)return;
+  const sc=prompt('场次号：',sh.scene_id||1); if(sc===null)return;
+  const body={prompt:pr,duration:parseFloat(du)||5,
+    dialogue:dl.trim()||null, speaker:sp.trim()||null,
+    scene_id:parseInt(sc)||1};
+  await api('/api/shots/'+sid,{method:'PATCH',body:JSON.stringify(body)});
+  toast('已更新'); render();
+};
+
+// ---- 镜头操作 ----
+const ST_NAME={pending:'待渲染',queued:'排队',running:'渲染中',
+  done:'已完成',failed:'失败',skipped:'已跳过'};
+function stName(s){return ST_NAME[s]||s}
+
+/** 把后端原始错误翻成人话。 */
+function humanErr(err){
+  if(!err) return '未知错误';
+  const e=String(err);
+  if(e.includes('CUDA out of memory')||e.includes('out of memory'))
+    return '显存不足（先释放显存或降分辨率）';
+  if(e.includes('value_not_in_list'))
+    return '模型文件名不对（检查 models.yaml）';
+  if(e.includes('连接失败')||e.includes('Connection refused'))
+    return '连不上 ComfyUI（检查对接地址）';
+  if(e.includes('超时')||e.includes('timeout'))
+    return '渲染超时（可调大 wait_timeout）';
+  if(e.includes('产物为空')) return '渲染无输出（查看 ComfyUI 日志）';
+  if(e.includes('产物拉取失败')) return '产物取回失败（检查 output 挂载）';
+  if(e.includes('HTTP 400')) return '工作流校验失败（节点参数不对）';
+  if(e.includes('HTTP 500')) return 'ComfyUI 内部错误';
+  return e.replace(/^\w*Error:\s*/,'').slice(0,60);
+}
+
+window.showErr=function(sid){
+  const ep=S.episode||{};
+  const sh=(ep.plan||ep.shots||[]).find(x=>x.id===sid);
+  if(!sh) return;
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal">
+    <h3>镜头 ${sh.seq} 失败详情</h3>
+    <div class="hint" style="margin-bottom:8px">
+      引擎 ${esc(sh.engine||'?')} · 分辨率 ${esc(sh.resolution||'?')} · 重试 ${sh.retries||0} 次
+    </div>
+    <div class="log" style="max-height:340px">${esc(sh.error||'')}</div>
+    <div class="flex" style="margin-top:14px">
+      <button onclick="rerenderShot('${sh.id}',this);this.closest('.modal-mask').remove()">↻ 重渲这一镜</button>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+};
+
+window.rerenderShot=async function(sid,btn){
+  if(btn){btn.disabled=true;btn.textContent='…'}
+  try{
+    const r=await api('/api/shots/'+sid+'/rerender',{method:'POST'});
+    toast('已提交重渲');
+    watchShot(r.task_id,sid);
+  }catch(e){
+    toast(e.message,'err');
+    if(btn){btn.disabled=false;btn.textContent='↻'}
+  }
+};
+
+async function watchShot(tid,sid){
+  for(let i=0;i<720;i++){
+    await new Promise(r=>setTimeout(r,2500));
+    let t;
+    try{ t=await api('/api/tasks/'+tid) }catch(e){ return }
+    if(t.status!=='running'){
+      if(t.status==='done'){
+        const r=t.result||{};
+        toast(r.status==='done'?'✔ 镜头重渲完成':`✖ 失败：${humanErr(r.error)}`,
+              r.status==='done'?'ok':'err');
+      } else {
+        toast('✖ '+humanErr(t.error),'err');
+      }
+      render();
+      return;
+    }
+  }
+}
+
+window.moveShot=async function(sid,dir){
+  try{
+    const r=await api('/api/shots/'+sid+'/move',{method:'POST',
+      body:JSON.stringify({direction:dir})});
+    if(r.moved===false) toast('已在边界');
+    render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.delShot=async function(sid){
+  if(!confirm('删除这个镜头？')) return;
+  try{
+    await api('/api/shots/'+sid,{method:'DELETE'});
+    toast('已删除'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.addShot=async function(eid){
+  const p=prompt('画面提示词（英文，可留空后补）：','');
+  if(p===null) return;
+  const d=prompt('时长（秒）：','5');
+  if(d===null) return;
+  try{
+    await api('/api/episodes/'+eid+'/shots',{method:'POST',
+      body:JSON.stringify({prompt:p,duration:parseFloat(d)||5})});
+    toast('已添加'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.resetShots=async function(eid,only){
+  const label=only==='all'?'全部':'失败的';
+  if(!confirm(`把${label}镜头重置为待渲染？`)) return;
+  try{
+    const r=await api('/api/episodes/'+eid+'/shots/reset',{method:'POST',
+      body:JSON.stringify({only})});
+    toast(`已重置 ${r.reset} 个`,'ok'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.previewShot=function(sid){
+  const ep=S.episode||{};
+  const sh=(ep.plan||ep.shots||[]).find(x=>x.id===sid);
+  if(!sh||!sh.output_path) return;
+  const rel=sh.output_path.replace(/^.*?\/output\//,'');
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(520px,100%)">
+    <h3>镜头 ${sh.seq} <span class="tag">${sh.engine||''} · ${((sh.duration_ms||0)/1000)|0}s</span></h3>
+    <div class="media-tools" style="margin:8px 0">
+      <span>高度</span>
+      <input type="range" min="240" max="900" step="20" value="600"
+        oninput="this.closest('.modal').querySelector('.media-box').style.setProperty('--media-max', this.value+'px')">
+      <label class="monchk"><input type="checkbox"
+        onchange="this.closest('.modal').querySelector('.media-box').classList.toggle('fill',this.checked)">
+        按宽度铺满</label>
+    </div>
+    <div class="media-box" style="--media-max:600px">
+      <video src="/api/files/${rel}" controls autoplay></video>
+    </div>
+    <div class="flex" style="margin-top:12px">
+      <a class="btn-ghost" href="/api/files/${rel}" download>⬇ 下载</a>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+};
+window.goRender=async function(eid){
+  S.episode=await api('/api/episodes/'+eid);
+  S.stage='render'; render();
+};
+
+// ============ 5. 渲染成片 ============
+// 流程：① 逐镜渲染（串行）→ ② 统一规格并拼接 → ③ 响度归一 + 烧字幕 → ④ 可选超分
+// 每一步的进度、结果、成品都在这一页展示；产物可预览/下载。
+
+const ASSEMBLE_STEPS = [
+  ['render',   '① 逐镜渲染'],
+  ['concat',   '② 拼接'],
+  ['loudnorm', '③ 响度+字幕'],
+  ['upscale',  '④ 超分'],
+];
+
+async function renderRender(m,p,gen){
+  const alive = () => gen===undefined || gen===RENDER_GEN;
+  // 运行期画幅/分辨率（横竖屏、基准档、交付档都从这里取，避免界面写死 1080p）
+  let RT = window._RT;
+  if(!RT){
+    try{ RT = window._RT = await api('/api/presets/runtime') }
+    catch(e){ RT = {assemble:{width:720,height:1280,fps:24},orientation:'portrait',
+                    render_resolutions:{},delivery:{width:1080,height:1920}} }
+    if(!alive()) return;
+  }
+  let ep=S.episode;
+  if(!ep){
+    m.innerHTML='<div class="card"><h2>⑤ 渲染成片</h2><div class="muted">请先选剧集</div></div>';
+    return;
+  }
+  // S.episode 可能来自剧集列表（无 shots 字段），这里拉完整数据
+  if(!ep.shots || !ep.summary){
+    try{
+      ep=await api('/api/episodes/'+ep.id);
+      S.episode=ep;
+    }catch(e){
+      m.innerHTML=`<div class="card"><h2>⑤ 渲染成片</h2><div class="log">${esc(e.message)}</div></div>`;
+      return;
+    }
+    if(!alive()) return;
+  }
+  const s=ep.summary||{};
+  const arts=(ep.artifacts||[]);
+  const artOf=k=>arts.filter(a=>a.kind===k);
+  const final=artOf('final')[0];
+  const upscales=artOf('upscale');
+  const concat=artOf('concat')[0];
+  const mode=(ep.engine_mode||'auto');
+
+  m.innerHTML=`
+  <div class="card"><h2>⑤ 渲染成片 <span class="tag">第${ep.seq}集</span>
+    <span class="tag">H3</span>
+    <span class="tag" id="canvasTag">${RT.assemble.width}×${RT.assemble.height}</span>
+    <span class="tag">${RT.orientation==='landscape'?'横屏 16:9':'竖屏 9:16'}</span>
+    <span class="tag">单卡串行</span></h2>
+    <div class="grid3" style="margin-bottom:14px">
+      <div class="stat"><div class="v">${s.estimated_minutes||0}</div><div class="k">预计耗时（分）</div></div>
+      <div class="stat"><div class="v">${ep.shot_stats?.done||0}/${(ep.shots||[]).length}</div><div class="k">镜头完成</div></div>
+      <div class="stat"><div class="v">${ep.shot_stats?.failed||0}</div><div class="k">失败</div></div>
+      <div class="stat"><div class="v">${final?((final.size/1048576)|0)+'MB':'-'}</div><div class="k">成片大小</div></div>
+    </div>
+
+    <div class="flex" style="gap:10px;margin-bottom:12px;font-size:12px">
+      ${ASSEMBLE_STEPS.map(([k,label])=>{
+        const doneStage = k==='render'
+          ? (ep.shot_stats?.done||0)>0
+          : (k==='concat'?!!concat : k==='loudnorm'?!!final : upscales.length>0);
+        return `<span class="pill ${doneStage?'done':'pending'}">${label}${doneStage?' ✓':''}</span>`;
+      }).join('<span class="muted">→</span>')}
+    </div>
+    <div class="hint" style="margin-bottom:12px">
+      成片链路：逐镜渲染（${RT.render_resolutions.normal||'720x1280'}）→ 统一到 <b>${RT.assemble.width}×${RT.assemble.height} / ${RT.assemble.fps}fps</b> 并拼接
+      → 响度归一 -16 LUFS + 烧字幕 → 可选超分。<br>
+      画布 = 渲染基准（不隐式放大）；要交付分辨率用超分（Lanczos 重采样，非 AI 超分）。
+      原片始终保留。
+    </div>
+
+    <div class="row">
+      <div style="flex:2"><label>质量档（MiniMax H3）</label>
+        <select id="qSel" onchange="onQualityChange()">
+          <option value="normal">标准 ${RT.render_resolutions.normal||'720×1280'} · 8 步（默认，与成片画布一致）</option>
+          <option value="quality">质量 ${RT.render_resolutions.quality||'768×1344'} · 12 步（更清晰，慢约 40%）</option>
+          <option value="draft">草稿 ${RT.render_resolutions.draft||'544×960'} · 8 步（最快，用于看节奏）</option>
+        </select>
+        <div class="hint" id="modeHint" style="margin-top:4px">
+          H3 音视频同生：台词口型、人物发声、环境声都在同一次生成里，不存在音轨拼接。
+        </div>
+      </div>
+      <div><label>成片后超分</label>
+        <select id="upSel">
+          <option value="">不超分（保持 ${RT.assemble.width}×${RT.assemble.height}）</option>
+          <option value="1080p">1080P（${RT.delivery.width}×${RT.delivery.height}）</option>
+          <option value="2k">2K</option>
+          <option value="4k">4K</option>
+        </select></div>
+      <div class="fixed" style="align-self:flex-end">
+        <button id="rBtn" onclick="doRender()">开始渲染</button></div>
+      <div class="fixed" style="align-self:flex-end">
+        <button class="ghost" onclick="enqueueEp('${ep.id}')" title="入队后台跑，你可以继续做其它集分镜">⏳ 加入队列</button></div>
+      <div class="fixed" style="align-self:flex-end">
+        <button class="ghost" onclick="enqueueAll('${p.id}')" title="本项目所有已有镜头的集全部入队（单卡串行，一集一集跑）">⏳⏳ 全部集入队</button></div>
+    </div>
+    <div class="hint" id="preflightWarn" style="display:none;margin-top:8px"></div>
+    <div id="taskBox"></div>
+  </div>
+
+  <div class="card"><h2>🧩 组合成片 <span class="tag">手动选镜 + take + 排序</span></h2>
+    <div class="hint" style="margin-bottom:10px">
+      每镜可选不同轮次渲染的 take（v1/v2/v3…），可拖动调序，可勾选跳过某镜。选好后点「用所选组合成片」。
+    </div>
+    <div id="composerBox" class="composer"></div>
+  </div>
+
+  <div class="card"><h2>镜头队列 <span class="tag">按 seq 串行</span>
+    <span class="muted" style="margin-left:auto;font-size:12px" id="queueEta"></span></h2>
+    <div id="queueBox"></div>
+  </div>
+
+  <div class="card"><h2>成片与超分产物 <span class="tag">${arts.length} 个 · 可预览</span></h2>
+    <div id="artBox"></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="doAssemble('${ep.id}')">仅重新成片</button>
+      <span class="muted" style="font-size:12px;margin-left:8px">重新成片并超分：</span>
+      ${['1080p','2k','4k'].map(q=>
+        `<button class="sm ghost" onclick="doAssemble('${ep.id}','${q}')">${q.toUpperCase()}</button>`
+      ).join('')}
+    </div>
+  </div>
+
+  <div class="card"><h2>单镜片段 <span class="tag">${(ep.shots||[]).filter(x=>x.status==='done').length} 段</span></h2>
+    <div id="vidGrid" class="grid3"></div>
+  </div>`;
+
+  renderArtifacts(ep);
+  await renderComposer(ep);   // 组合成片面板（选 take + 排序）
+  // await 之后可能已被新一轮 render 取代：queries 会命中 null，必须提前退出
+  if(!alive()) return;
+  const done=(ep.shots||[]).filter(x=>x.status==='done'&&x.output_path);
+  const g=$('#vidGrid');
+  if(!g) return;
+  if(!done.length){g.innerHTML='<div class="muted">还没有渲染完成的片段</div>'}
+  else{
+    g.innerHTML=done.map(sh=>{
+      const rel=sh.output_path.replace(/^.*?\/output\//,'');
+      return `<div class="stat">
+        <div class="muted" style="font-size:11px;margin-bottom:5px">镜${sh.seq} · ${sh.engine} · ${((sh.duration_ms||0)/1000)|0}s</div>
+        <div class="media-box" style="--media-max:320px">
+          <video src="/api/files/${rel}" controls preload="none"></video>
+        </div>
+        <div class="flex" style="margin-top:4px">
+          <a class="btn-ghost sm" href="/api/files/${rel}?download=true" download>⬇ 下载</a>
+        </div>
+      </div>`}).join('');
+  }
+
+  // 只挂载「仍在运行」且没处理过的任务。
+  // 否则已完成的任务会被反复捡起来 → pollTask 立刻判定结束 → render()
+  // → 又捡到同一个任务 → 无限重绘（页面闪、输入框被清空、报 innerHTML null）。
+  api('/api/tasks').then(d=>{
+    const t=(d.tasks||[]).find(x=>x.episode_id===ep.id
+      && x.status==='running'
+      && !S.handledTasks.has(x.id));
+    if(t) pollTask(t.id);
+  });
+
+  // 显存预检提醒
+  api('/api/system').then(sys=>{
+    const pf=sys.preflight||{};
+    const w=$('#preflightWarn');
+    if(!w) return;
+    if(pf.ok===false){
+      w.style.display='block';
+      const q=pf.comfy_queue;
+      w.innerHTML=`<span style="color:var(--err)">⚠ ${esc(pf.reason||'显存不足')}</span>
+        <button class="sm ghost" style="margin-left:8px" onclick="freeGpu()">释放缓存</button>
+        ${q&&q.running?`<button class="sm ghost" style="margin-left:6px" onclick="interruptComfy()">中断当前任务</button>`:''}`;
+    }
+  }).catch(()=>{});
+
+  renderQueue(ep);
+}
+
+/** 成片/超分/拼接产物列表：可预览、可下载、可删登记。 */
+/** 🧩 组合成片面板：每镜列多轮 take，可选可跳可排序。 */
+async function renderComposer(ep){
+  const box = document.getElementById('composerBox');
+  if(!box) return;
+  let takesData = [];
+  try{
+    const d = await api(`/api/episodes/${ep.id}/takes`);
+    takesData = d.takes || [];
+  }catch(e){
+    box.innerHTML = `<div class="muted">${esc(e.message)}</div>`;
+    return;
+  }
+  if(!takesData.length){
+    box.innerHTML = '<div class="muted">还没有可用镜头</div>';
+    return;
+  }
+  // 初始化本地状态：{shot_id: {take, skip}}
+  if(!window._compState || window._compState.epId !== ep.id){
+    const st = {epId: ep.id, sel:{}};
+    for(const t of takesData){
+      if(t.takes && t.takes.length){
+        st.sel[t.shot_id] = {take: t.selected_take || 'v1', skip:false};
+      }
+    }
+    window._compState = st;
+  }
+  window._compTakes = takesData;
+  renderCompList();
+}
+
+function renderCompList(){
+  const box = document.getElementById('composerBox');
+  if(!box) return;
+  const takesData = window._compTakes || [];
+  const st = window._compState || {sel:{}};
+  box.innerHTML = takesData.map(t => {
+    const sel = st.sel[t.shot_id];
+    if(!sel){
+      // 该镜无 take 或尚未渲染
+      return `<div class="comp-item dim" data-sid="${t.shot_id}">
+        <span class="pill dim">镜${t.seq}</span>
+        <span class="muted">${t.status==='pending'?'待渲染':t.status==='running'?'渲染中':'无产物'}</span>
+      </div>`;
+    }
+    return `<div class="comp-item${sel.skip?' dim':''}" draggable="true" data-sid="${t.shot_id}">
+      <span class="pill${sel.skip?' dim':' done'}">镜${t.seq}</span>
+      ${(t.takes||[]).map(tk =>
+        `<button class="sm${sel.take===tk.take?'':' ghost'}" style="margin-left:4px"
+           onclick="pickTake('${t.shot_id}','${tk.take}')" title="时长${tk.duration}s · ${(tk.size/1048576).toFixed(1)}MB">${tk.take}</button>`
+      ).join('')}
+      <label class="muted" style="margin-left:8px;font-size:11px">
+        <input type="checkbox" ${sel.skip?'checked':''}
+          onchange="toggleSkip('${t.shot_id}',this.checked)"> 跳过
+      </label>
+      <span class="muted" style="margin-left:auto;font-size:10px">拖动调序</span>
+    </div>`;
+  }).join('');
+  // 拖拽排序
+  let dragEl = null;
+  box.querySelectorAll('.comp-item').forEach(el => {
+    el.addEventListener('dragstart', () => { dragEl = el; el.style.opacity = '0.4'; });
+    el.addEventListener('dragend', () => { el.style.opacity = '1'; });
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      if(dragEl && dragEl !== el){
+        const rect = el.getBoundingClientRect();
+        const isAfter = e.clientY > rect.top + rect.height/2;
+        el.parentNode.insertBefore(dragEl, isAfter ? el.nextSibling : el);
+      }
+    });
+  });
+}
+
+window.pickTake = function(shotId, take){
+  const st = window._compState;
+  if(!st || !st.sel[shotId]) return;
+  st.sel[shotId].take = take;
+  // 持久化到后端：改 output_path 指向所选 take
+  api(`/api/episodes/${st.epId}/takes/select`, {
+    method: 'POST',
+    body: JSON.stringify({shot_id: shotId, take})
+  }).then(() => {
+    renderCompList();
+    toast(`镜已选中 take ${take}`,'ok');
+  }).catch(e => toast(e.message,'err'));
+};
+
+window.toggleSkip = function(shotId, skip){
+  const st = window._compState;
+  if(!st || !st.sel[shotId]) return;
+  st.sel[shotId].skip = skip;
+  renderCompList();
+};
+
+/** 用当前所选的镜头组合成片。 */
+window.assembleFromSelection = async function(){
+  const st = window._compState;
+  if(!st || !st.epId) return;
+  // 收集排序后的 shot_id 顺序 + 各镜所选 take + skip 标记
+  const box = document.getElementById('composerBox');
+  if(!box) return;
+  const orderedIds = [...box.querySelectorAll('.comp-item[data-sid]')]
+    .map(el => el.dataset.sid);
+  const payload = {
+    order: orderedIds,           // 按当前 DOM 顺序重排 seq
+    skips: Object.entries(st.sel)
+      .filter(([_, v]) => v.skip)
+      .map(([sid]) => sid),      // 跳过的镜头
+  };
+  try{
+    // ① 先把排序和跳过写到后端（更新 seq，标记 skip）
+    await api(`/api/episodes/${st.epId}/compose`, {
+      method: 'POST', body: JSON.stringify(payload)
+    });
+    // ② 再触发成片
+    await doAssemble(st.epId);
+  }catch(e){ toast(e.message,'err') }
+};
+
+function renderArtifacts(ep){
+  const box=$('#artBox'); if(!box) return;
+  const arts=(ep.artifacts||[]);
+  if(!arts.length){ box.innerHTML='<div class="muted">还没有成片产物</div>'; return }
+  const KIND={final:'成片',upscale:'超分',concat:'拼接原件',srt:'字幕'};
+  const vids=arts.filter(a=>a.url && !a.path.endsWith('.srt'));
+  // 主预览：优先生成片，其次最新超分，最后拼接原件
+  const primary = arts.find(a=>a.kind==='final'&&a.url) || vids[0];
+  box.innerHTML=`
+    ${primary?`<div style="margin-bottom:14px">
+      <div class="flex" style="justify-content:space-between;margin-bottom:6px">
+        <b>${esc(primary.label||'')}</b>
+        <span class="muted" style="font-size:11px">
+          ${primary.width?primary.width+'×'+primary.height+' · ':''}${primary.duration?primary.duration.toFixed(1)+'s · ':''}${primary.size?(primary.size/1048576).toFixed(1)+' MB':''}
+        </span>
+      </div>
+      <div class="media-box" style="--media-max:560px">
+        <video src="${primary.url}" controls preload="metadata"></video>
+      </div>
+    </div>`:''}
+    ${arts.map(a=>{
+      const kb=a.size?`${(a.size/1048576).toFixed(1)} MB`:'-';
+      const dim=a.width?`${a.width}×${a.height}`:'';
+      const dur=a.duration?`${a.duration.toFixed(1)}s`:'';
+      const isSrt=a.path.endsWith('.srt');
+      const hasVideo=!!a.url && !isSrt && a.exists!==false;
+      return `<div class="stat" style="margin-bottom:8px">
+        <div class="flex" style="justify-content:space-between">
+          <span><span class="pill ${a.kind==='final'?'done':a.kind==='upscale'?'h3':'dim'}">${KIND[a.kind]||a.kind}</span>
+            <b style="margin-left:6px">${esc(a.label||'')}</b>
+            ${a.exists===false?'<span class="pill failed" style="margin-left:6px">文件缺失</span>':''}</span>
+          <span class="muted" style="font-size:11px">${dim} ${dur} ${kb}</span>
+        </div>
+        <div class="flex" style="margin-top:6px">
+          ${hasVideo?`<button class="sm" onclick="previewArtifact('${a.id}')">▶ 预览</button>`:''}
+          ${a.url?`<a class="btn-ghost sm" href="${a.url}?download=true" download>⬇ 下载</a>`:''}
+          ${a.url&&isSrt?`<a class="btn-ghost sm" href="${a.url}" target="_blank">查看字幕</a>`:''}
+          <button class="sm ghost" onclick="delArtifact('${a.id}',${!!a.exists})">🗑 移除登记</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+  window._ARTS = arts;
+}
+
+/** 产物预览弹窗：大画面播放 + 高度调节 + 按宽度铺满 + 下载。 */
+window.previewArtifact=function(aid){
+  const a=(window._ARTS||[]).find(x=>x.id===aid);
+  if(!a||!a.url) return toast('产物不存在','err');
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(760px,100%)">
+    <h3>${esc(a.label||a.kind)}</h3>
+    <div class="hint" style="margin-bottom:8px">
+      ${a.width?a.width+'×'+a.height+' · ':''}${a.duration?a.duration.toFixed(1)+'s · ':''}
+      ${a.size?(a.size/1048576).toFixed(1)+' MB':''}
+    </div>
+    <div class="media-tools" style="margin:8px 0">
+      <span>高度</span>
+      <input type="range" min="240" max="900" step="20" value="600"
+        oninput="this.closest('.modal').querySelector('.media-box').style.setProperty('--media-max', this.value+'px')">
+      <label class="monchk"><input type="checkbox"
+        onchange="this.closest('.modal').querySelector('.media-box').classList.toggle('fill',this.checked)">
+        按宽度铺满</label>
+    </div>
+    <div class="media-box" style="--media-max:600px">
+      <video src="${a.url}" controls autoplay playsinline></video>
+    </div>
+    <div class="flex" style="margin-top:12px">
+      <a class="btn-ghost" href="${a.url}?download=true" download>⬇ 下载</a>
+      <a class="btn-ghost" href="${a.url}" target="_blank">⧉ 新窗口</a>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+};
+
+window.enqueueAll=async function(pid){
+  const n=(S.project.episodes||[]).filter(e=>(e.shot_total||0)>0).length;
+  if(!n) return toast('还没有任何镜头，先做分镜','err');
+  if(!confirm(`把本项目 ${n} 集全部加入渲染队列？\n单卡串行，会按集顺序一集一集跑。`)) return;
+  try{
+    const r=await api('/api/queue/all',{method:'POST',body:JSON.stringify({project_id:pid})});
+    toast(`已入队 ${r.count||0} 集，后台开始跑`,'ok');
+    openQueuePanel();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.delArtifact=async function(aid,hasFile){
+  if(!confirm('只移除产物登记（不删磁盘文件）。确定？')) return;
+  try{
+    await api('/api/artifacts/'+aid,{method:'DELETE'});
+    toast('已移除登记','ok');
+    if(S.episode?.id){ S.episode=await api('/api/episodes/'+S.episode.id) }
+    render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.freeGpu=async function(){
+  try{
+    const r=await api('/api/admin/gpu/free',{method:'POST'});
+    toast(`已释放，当前占用 ${r.after?.used_mb??'?'} MiB`,'ok');
+    render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.interruptComfy=async function(){
+  if(!confirm('中断 ComfyUI 当前任务？正在渲染的片段会丢失。')) return;
+  try{
+    const r=await api('/api/admin/comfy/interrupt',{method:'POST'});
+    toast(r.ok?`已中断，显存降至 ${r.after?.used_mb??'?'} MiB`:'中断失败', r.ok?'ok':'err');
+    render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+/** 渲染队列可视化：每镜一个方块，颜色表示状态。 */
+function renderQueue(ep){
+  const box=$('#queueBox'); if(!box) return;
+  const shots=ep.shots||[];
+  if(!shots.length){ box.innerHTML='<div class="muted">还没有镜头</div>'; return }
+
+  const counts={};
+  for(const s of shots) counts[s.status]=(counts[s.status]||0)+1;
+  const done=counts.done||0, total=shots.length;
+  const pct=total?Math.round(done*100/total):0;
+
+  box.innerHTML=`
+    <div class="flex" style="margin-bottom:10px;font-size:12px">
+      <span class="pill pending">待渲染 ${counts.pending||0}</span>
+      <span class="pill running">渲染中 ${counts.running||0}</span>
+      <span class="pill done">完成 ${done}</span>
+      <span class="pill failed">失败 ${counts.failed||0}</span>
+      <span class="pill skipped">跳过 ${counts.skipped||0}</span>
+      <span class="muted" style="margin-left:auto">${done}/${total}</span>
+    </div>
+    <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+    <div class="qgrid">
+      ${shots.map(s=>{
+        const st=s.status||'pending';
+        const r=s._route||{};
+        const t=s.duration_ms?`${(s.duration_ms/1000).toFixed(0)}s`:'';
+        const tip=`镜${s.seq} · ${stName(st)} · ${r.engine||s.engine||'?'}${t?' · '+t:''}`;
+        return `<div class="qcell ${st}" title="${esc(tip)}"
+          onclick="showErr('${s.id}')" ${st==='done'?'':''}>
+          <div class="n">${s.seq}</div>
+          <div class="e">${(r.engine||s.engine||'?').toUpperCase()}</div>
+          ${st==='running'?'<div class="spin"></div>':''}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // 剩余时间估算
+  const eta=$('#queueEta');
+  if(eta){
+    const left=shots.filter(s=>['pending','failed'].includes(s.status));
+    if(left.length){
+      const mins=left.reduce((a,s)=>{
+        const r=s._route||{};
+        const base=(r.engine||s.engine)==='h3'?10.6:2.6;
+        return a+base*((+s.duration||5)/5);
+      },0);
+      eta.textContent=`剩 ${left.length} 镜 ≈ ${mins<60?Math.round(mins)+' 分':(mins/60).toFixed(1)+' 小时'}`;
+    } else {
+      eta.textContent='全部完成';
+    }
+  }
+}
+window.onQualityChange=function(){
+  const q=$('#qSel').value;
+  const h=$('#modeHint');
+  const map={
+    normal:'标准档：分辨率与成片画布一致（不放大），单镜约 13 分钟。日常主力。',
+    quality:'质量档：短边 768 + 12 步，画质更好，单镜约 15.4 分钟。成片时会等比缩到画布。',
+    draft:'草稿档：544×960，单镜约 6.5 分钟。只看构图和节奏，不适合交付。',
+  };
+  if(h) h.textContent=map[q]||'';
+};
+
+window.doRender=async function(){
+  const ep=S.episode; const btn=$('#rBtn'); if(btn){btn.disabled=true;btn.textContent='提交中…'}
+  try{
+    const q=$('#qSel') ? $('#qSel').value : 'normal';
+    const up=$('#upSel') ? $('#upSel').value : '';
+    const body={episode_id:ep.id, upscale:up||''};
+    if(q==='quality'){ body.quality_first=true; }
+    else if(q==='draft'){
+      // 草稿档：显式给 544x960（router 按 orientation 自动交换宽高）
+      body.quality_first=false;
+    }
+    const r=await api('/api/render',{method:'POST',body:JSON.stringify(body)});
+    toast(up?`渲染已启动（成片后自动超分 ${up}）`:'渲染已启动');
+    S.handledTasks.delete(r.task_id); pollTask(r.task_id);
+  }catch(e){toast(e.message,'err')}
+  finally{ if(btn){btn.disabled=false;btn.textContent='开始渲染'} }
+};
+
+window.doAssemble=async function(eid, upscale){
+  try{
+    const url = `/api/episodes/${eid}/assemble` + (upscale?`?upscale=${upscale}`:'');
+    const r=await api(url,{method:'POST'});
+    toast(upscale?`成片+超分(${upscale})已启动`:'成片任务已启动');
+    S.handledTasks.delete(r.task_id); pollTask(r.task_id);
+  }catch(e){toast(e.message,'err')}
+};
+
+/** 成片链路的阶段进度条：渲染 → 拼接 → 响度/字幕 → 超分 */
+function stageBar(phase,done){
+  const order=['render','normalize','concat','loudnorm','subtitle','upscale'];
+  const names={render:'渲染',normalize:'规范化',concat:'拼接',
+    loudnorm:'响度',subtitle:'字幕',upscale:'超分'};
+  const i=order.indexOf(phase);
+  return `<div class="flex" style="gap:4px;font-size:11px;margin:6px 0">
+    ${order.map((k,j)=>{
+      const cls = j<i||done ? 'done' : (j===i?'running':'pending');
+      return `<span class="pill ${cls}">${names[k]}</span>`;
+    }).join('<span class="muted">›</span>')}</div>`;
+}
+
+async function pollTask(tid){
+  if(S.watchingTask===tid) return;     // 同一任务不重复轮询
+  S.watchingTask=tid;
+  const box=$('#taskBox'); if(!box){ S.watchingTask=null; return }
+  const timer=setInterval(async()=>{
+    try{
+      const t=await api('/api/tasks/'+tid);
+      const last=(t.progress||[]).slice(-1)[0]||{};
+      const ph=last.phase||'';
+      let pct=0,label='准备中';
+      if(ph==='render'){pct=((last.index||0)/(last.total||1)*100)|0;
+        label=`① 渲染 镜${last.shot} (${last.index||0}/${last.total||0})`}
+      else if(ph==='cooldown'){label=`冷却 ${last.seconds}s`}
+      else if(ph==='normalize'){pct=last.total?Math.round((last.index||0)/last.total*10):5;
+        label=`② 统一规格 ${last.index||0}/${last.total||0}`}
+      else if(ph==='concat'){pct=last.status==='done'?35:25;label='② 拼接中'}
+      else if(ph==='loudnorm'){pct=last.status==='done'?55:45;label='③ 响度归一'}
+      else if(ph==='subtitle'){pct=last.status==='done'?70:62;label='③ 烧录字幕'}
+      else if(ph==='upscale'){pct=last.status==='done'?95:80;
+        label=`④ 超分 ${last.target||''} ${last.resolution||''}`}
+      else if(ph==='assemble'){pct=last.status==='done'?100:60;label='成片合成中'}
+      else if(ph==='queue'){pct=last.status==='done'?100:5;label='队列调度中'}
+      else if(ph==='storyboard'){pct=Math.round((last.index||0)/(last.total||1)*100);
+        label=`批量分镜 第${last.seq||last.index||0}集 (${last.index||0}/${last.total||0})`}
+      else if(ph==='portrait'){pct=Math.round((last.index||0)/(last.total||1)*100);
+        label=`定妆照 ${last.character||''} (${last.index||0}/${last.total||0})`}
+      else if(ph==='localize'){pct=Math.round((last.index||0)/(last.total||1)*100);
+        label=`转中文 ${last.kind||''} (${last.index||0}/${last.total||0})`}
+      else if(ph==='chain'){label='镜头衔接（尾帧→首帧）'}
+
+      box.innerHTML=`
+        <div style="margin-top:14px">
+          <div class="flex" style="justify-content:space-between;font-size:12px">
+            <span>${esc(label)}</span><span class="pill ${t.status}">${esc(t.status)}</span></div>
+          <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+          ${stageBar(ph, t.status==='done')}
+          <div class="log" id="tlog">${(t.progress||[]).map(ev=>
+            `<div><span class="t">${new Date(ev.t*1000).toLocaleTimeString('zh-CN')}</span>
+             ${esc(ev.phase||'')} ${ev.shot?`镜${ev.shot}`:''} ${esc(ev.status||'')}
+             ${ev.target?`<span class="muted">${esc(ev.target)}</span>`:''}
+             ${ev.resolution?`<span class="muted">${esc(ev.resolution)}</span>`:''}
+             ${ev.engine?`<span class="eng ${ev.engine}">${ev.engine}</span>`:''}
+             ${ev.output?`<span class="ok">${esc(String(ev.output).slice(-60))}</span>`:''}
+             ${ev.error?`<span class="err">${esc(String(ev.error).slice(0,110))}</span>`:''}</div>`).join('')}</div>
+        </div>`;
+      const lg=$('#tlog'); if(lg)lg.scrollTop=lg.scrollHeight;
+
+      // 渲染中同步刷新队列方块与镜头状态
+      if(t.status==='running' && (ph==='render'||ph==='cooldown')){
+        try{
+          const fresh=await api('/api/episodes/'+(S.episode?.id||''));
+          if(fresh && fresh.id){ S.episode=fresh; renderQueue(fresh); }
+        }catch(e){}
+      }
+
+      if(t.status!=='running'){
+        clearInterval(timer);
+        S.handledTasks.add(tid);        // 标记已处理，避免再次被自动挂载
+        S.watchingTask=null;
+        if(t.status==='done'){
+          toast('完成','ok');
+          if(t.kind==='storyboard-all'){
+            document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+            await openProject(S.project.id); S.stage='storyboard'; render();
+          } else {
+            await openProject(S.project.id);
+            S.stage='render'; render();
+          }
+        } else {
+          toast('失败: '+humanErr(t.error||(t.result&&t.result.error)),'err');
+        }
+      }
+    }catch(e){ clearInterval(timer); S.watchingTask=null }
+  },2500);
+}
+
+// ============ 全局角色库（独立管理界面）============
+// 回答老板的问题：以前「③ 锁定基础信息」里只能导入/存入，
+// 没法单独查看与维护。现在顶栏 👤 打开就是独立管理界面：
+// 增删改、参考图、搜索、看被哪些项目用过。
+
+window.openLibManager=async function(){
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(980px,100%)">
+    <div class="flex" style="justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">👤 全局角色库 <span class="tag" id="libCount"></span></h3>
+      <button class="sm" onclick="libNew()">+ 新增角色</button>
+    </div>
+    <div class="hint" style="margin-bottom:10px">
+      跨项目统一管理：锁定页可用「📚 从角色库导入」，也可把项目角色「💾 存到角色库」。
+      参考图会作为该角色的面部锚定首帧参与渲染。
+    </div>
+    <div class="flex" style="margin-bottom:10px">
+      <input id="libSearch" placeholder="搜索名字 / 标签…" style="flex:1"
+        oninput="libRenderList()">
+      <button class="sm ghost" onclick="libRenderList()">↻</button>
+    </div>
+    <div id="libList" style="max-height:min(62vh,620px);overflow-y:auto"></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+  await libRenderList();
+};
+
+window.libRenderList=async function(){
+  const box=document.getElementById('libList'); if(!box) return;
+  const q=(document.getElementById('libSearch')||{}).value||'';
+  box.innerHTML='加载中…';
+  try{
+    const d=await api('/api/character-lib?q='+encodeURIComponent(q));
+    const items=d.characters||[];
+    const cnt=document.getElementById('libCount'); if(cnt) cnt.textContent=items.length+' 个';
+    if(!items.length){ box.innerHTML='<div class="muted">角色库还是空的。可以在「③ 锁定基础信息」把项目角色存进来，或点右上「+ 新增角色」。</div>'; return }
+    box.innerHTML=items.map(c=>`
+      <div class="charline" style="align-items:flex-start">
+        ${c.ref_image?`<img src="/api/uploads/${esc((c.ref_image||'').split('/').pop())}"
+          style="height:64px;border-radius:5px;border:1px solid var(--line);object-fit:cover">`
+          :'<div style="height:64px;width:48px;border-radius:5px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:10px">无图</div>'}
+        <div class="body" style="flex:1">
+          <div><b>${esc(c.name||'')}</b>
+            ${c.name_en?`<span class="muted">(${esc(c.name_en)})</span>`:''}
+            ${(c.tags||'')?`<span class="pill dim" style="margin-left:6px">${esc(c.tags)}</span>`:''}
+          </div>
+          <div class="muted" style="font-size:11.5px">${esc((c.appearance_zh||c.appearance||'').slice(0,120))}</div>
+          ${c.voice_note?`<div class="muted" style="font-size:11px">声线：${esc(c.voice_note)}</div>`:''}
+          ${(c.used_by||[]).length?`<div class="muted" style="font-size:11px">用于：${esc(c.used_by.slice(0,4).join('、'))}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="sm ghost" onclick='libEdit(${JSON.stringify(c).replace(/'/g,"&#39;")})'>改</button>
+          <button class="sm ghost" onclick="libDelete('${c.id}','${esc(c.name||'').replace(/'/g,"")}')">✕</button>
+        </div>
+      </div>`).join('');
+  }catch(e){ box.innerHTML=`<div class="log">${esc(e.message)}</div>` }
+};
+
+window.libNew=function(){ libForm({}, true) };
+
+window.libEdit=function(c){ libForm(c, false) };
+
+function libForm(c, isNew){
+  document.querySelectorAll('.modal-mask').forEach((n,i)=>{
+    if(i>0) n.remove();          // 只保留底层角色库弹窗
+  });
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(680px,100%)">
+    <h3>${isNew?'新增':'编辑'}角色</h3>
+    <div class="row">
+      <div><label>中文名 *</label><input id="lfName" value="${esc(c.name||'')}"></div>
+      <div><label>英文名</label><input id="lfNameEn" value="${esc(c.name_en||'')}"></div>
+    </div>
+    <div class="row"><div><label>中文外貌描述（给人看，也进提示词）</label>
+      <textarea id="lfZh" rows="3">${esc(c.appearance_zh||'')}</textarea></div></div>
+    <div class="row"><div><label>外貌锚点（进渲染，中文即可）</label>
+      <textarea id="lfApp" rows="3">${esc(c.appearance||'')}</textarea></div></div>
+    <div class="row">
+      <div><label>声线描述</label><input id="lfVoice" value="${esc(c.voice_note||'')}"></div>
+      <div><label>标签（逗号分隔）</label><input id="lfTags" value="${esc(c.tags||'')}"></div>
+    </div>
+    <div class="row"><div><label>参考图路径</label>
+      <div class="flex">
+        <input id="lfRef" value="${esc(c.ref_image||'')}" placeholder="/input/uploads/xxx.png">
+        <label class="sm ghost" style="cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:6px;white-space:nowrap">
+          📷 上传<input type="file" accept="image/*" style="display:none" onchange="libUpload(this)">
+        </label>
+      </div></div></div>
+    <div class="flex" style="margin-top:14px">
+      <button onclick="libSave('${c.id||''}',${isNew})">保存</button>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+}
+
+window.libUpload=async function(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file', f);
+  try{
+    const r=await fetch('/api/upload?kind=ref',{method:'POST',body:fd});
+    if(!r.ok) throw new Error(await r.text());
+    const d=await r.json();
+    const p=d.files[0].path;
+    document.getElementById('lfRef').value=p;
+    toast('参考图已上传','ok');
+  }catch(e){ toast('上传失败: '+e.message,'err') }
+};
+
+window.libSave=async function(cid, isNew){
+  const body={
+    name:(document.getElementById('lfName').value||'').trim(),
+    name_en:(document.getElementById('lfNameEn').value||'').trim(),
+    appearance_zh:(document.getElementById('lfZh').value||'').trim(),
+    appearance:(document.getElementById('lfApp').value||'').trim(),
+    voice_note:(document.getElementById('lfVoice').value||'').trim(),
+    tags:(document.getElementById('lfTags').value||'').trim(),
+    ref_image:(document.getElementById('lfRef').value||'').trim(),
+  };
+  if(!body.name) return toast('中文名必填','err');
+  if(!body.appearance && body.appearance_zh) body.appearance=body.appearance_zh;
+  try{
+    if(isNew) await api('/api/character-lib',{method:'POST',body:JSON.stringify(body)});
+    else await api('/api/character-lib/'+cid,{method:'PATCH',body:JSON.stringify(body)});
+    toast('已保存','ok');
+    document.querySelectorAll('.modal-mask').forEach((n,i)=>{ if(i>0) n.remove() });
+    await libRenderList();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.libDelete=async function(cid,name){
+  if(!confirm(`从角色库删除「${name||''}」？\n（只删库里这条，不会影响已锁定它的项目）`)) return;
+  try{
+    await api('/api/character-lib/'+cid,{method:'DELETE'});
+    toast('已删除','ok'); await libRenderList();
+  }catch(e){ toast(e.message,'err') }
+};
+
+// ============ 全局渲染队列面板 ============
+// 一集分镜做完就入队，人接着做下一集；这里统一监控/暂停/取消。
+
+let QUEUE_TIMER=null;
+
+window.openQueuePanel=async function(){
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(1000px,100%)">
+    <div class="flex" style="justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">⏳ 渲染队列 <span class="tag" id="qState"></span></h3>
+      <div class="flex">
+        <button class="sm ghost" id="qPauseBtn" onclick="queueControl('pause')">暂停</button>
+        <button class="sm ghost" onclick="queueControl('resume')">恢复</button>
+        <button class="sm ghost" onclick="queueControl('clear_finished')">清理已完成</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:10px">
+      单卡串行：同一时刻只跑一集。分镜做完即可「加入队列」，先去处理下一集。
+      服务重启后未完成的项会自动续跑。
+    </div>
+    <div id="qList" style="max-height:min(64vh,640px);overflow-y:auto"></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="this.closest('.modal-mask').remove();clearInterval(QUEUE_TIMER);QUEUE_TIMER=null">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+  await queueRender();
+  clearInterval(QUEUE_TIMER);
+  QUEUE_TIMER=setInterval(()=>{ if(!document.getElementById('qList')){clearInterval(QUEUE_TIMER);return} queueRender() }, 4000);
+};
+
+window.queueRender=async function(){
+  const box=document.getElementById('qList'); if(!box) return;
+  try{
+    const d=await api('/api/queue');
+    const c=d.consumer||{};
+    const cnt=d.counts||{};
+    const st=document.getElementById('qState');
+    if(st) st.textContent=`${c.consumer_alive?'消费者运行中':'消费者未运行'}${c.paused?' · 已暂停':''} · 排队 ${cnt.queued||0} · 运行 ${cnt.running||0}`;
+    const items=d.items||[];
+    if(!items.length){ box.innerHTML='<div class="muted">队列为空。在「④ 分镜头脚本」页点「⏳ 加入渲染队列」。</div>'; return }
+    const QST={queued:'排队中',running:'渲染中',done:'已完成',failed:'失败',canceled:'已取消'};
+    box.innerHTML=`<table><thead><tr>
+      <th>#</th><th>项目 / 集</th><th>模式</th><th>镜头</th><th>状态</th><th>进度</th><th>操作</th>
+      </tr></thead><tbody>${items.map(it=>{
+        const opt=it.options||{};
+        const p=it.progress||{};
+        let line='';
+        if(it.status==='running'){
+          line = p.phase==='render' ? `渲染 镜${p.shot||''} (${p.index||0}/${p.total||0})`
+               : p.phase==='normalize' ? `统一规格 ${p.index||0}/${p.total||0}`
+               : p.phase==='upscale' ? `超分 ${p.target||''}`
+               : (p.phase||'') + ' ' + (p.status||'');
+        }
+        return `<tr>
+          <td class="mono">E${it.seq||''}</td>
+          <td><div style="font-size:12.5px">${esc(it.project_title||'')}</div>
+              <div class="muted" style="font-size:11px">${esc(it.episode_title||'')}</div></td>
+          <td class="muted" style="font-size:11.5px">${esc(it.engine_mode||'auto')}</td>
+          <td class="mono" style="font-size:11.5px">${it.shots_done||0}/${it.shots_total||0}${it.shots_failed?` <span style="color:var(--err)">✗${it.shots_failed}</span>`:''}</td>
+          <td><span class="pill ${it.status}">${QST[it.status]||it.status}</span></td>
+          <td class="muted" style="font-size:11.5px">${esc(line)}${it.error?`<div style="color:var(--err);font-size:10.5px">${esc(String(it.error).slice(0,50))}</div>`:''}</td>
+          <td style="white-space:nowrap">
+            ${it.status==='running'&&it.task_id?`<button class="sm ghost" onclick="pollTaskFromQueue('${it.task_id}')">日志</button>`:''}
+            ${it.status==='queued'?`<button class="sm ghost" onclick="queueCancel('${it.id}')">取消</button>`:''}
+            ${it.status==='done'&&it.output?`<a class="btn-ghost sm" href="/api/files/${esc((it.output||'').replace(/^.*?\/output\//,''))}?download=true" download>⬇</a>`:''}
+          </td>
+        </tr>`}).join('')}</tbody></table>`;
+    const badge=document.getElementById('qBadge');
+    if(badge) badge.textContent=(cnt.queued||0)>0?String(cnt.queued):'';
+  }catch(e){ box.innerHTML=`<div class="log">${esc(e.message)}</div>` }
+};
+
+window.queueControl=async function(action){
+  try{
+    const r=await api('/api/queue/control',{method:'POST',body:JSON.stringify({action})});
+    toast(action==='pause'?'已暂停':action==='resume'?'已恢复':`已清理 ${r.cleared||0} 项`,'ok');
+    await queueRender();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.queueCancel=async function(qid){
+  if(!confirm('从队列移除这一集？（已渲染的镜头不会丢）')) return;
+  try{ await api('/api/queue/'+qid,{method:'DELETE'}); toast('已取消','ok'); await queueRender() }
+  catch(e){ toast(e.message,'err') }
+};
+
+window.pollTaskFromQueue=function(tid){
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(760px,100%)">
+    <h3>任务日志</h3><div id="taskBox"></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div></div>`;
+  document.body.append(mask);
+  S.watchingTask=null; pollTask(tid);
+};
+
+// ---------- 主题 ----------
+const THEME_KEY = 'video.theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem(THEME_KEY, t) }catch(e){}
+  const b = document.getElementById('themeBtn');
+  if(b) b.textContent = t==='light' ? '🌙' : '☀️';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme')||'dark';
+  applyTheme(cur==='dark' ? 'light' : 'dark');
+}
+(function initTheme(){
+  let t = 'dark';
+  try{ t = localStorage.getItem(THEME_KEY) || 'dark' }catch(e){}
+  // 未设置过时跟随系统
+  if(!localStorage.getItem(THEME_KEY) && window.matchMedia &&
+     window.matchMedia('(prefers-color-scheme: light)').matches) t='light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+
+loadMonCfg();
+
+// 队列角标：每 20s 看一次排队数量（轻量，不拉全量数据）
+setInterval(async()=>{
+  try{
+    const d=await api('/api/queue?limit=1');
+    const n=(d.counts&&d.counts.queued)||0;
+    const b=document.getElementById('qBadge');
+    if(b) b.textContent=n>0?String(n):'';
+  }catch(e){}
+},20000);
+api('/api/presets').then(p=>{
+  MON_DEFS = (p.monitor||{}).items || [];
+  window._styles = p.styles || [];
+  window._platforms = p.platforms || [];
+  const srv = (p.monitor||{});
+  if(!localStorage.getItem(MON_KEY) && srv.enabled){
+    MON = { refresh: srv.refresh_sec||15, enabled: srv.enabled };
+  }
+}).catch(()=>{}).finally(()=>{ applyMonInterval(); });
+
+refreshAll();
+</script>
+</body>
+</html>

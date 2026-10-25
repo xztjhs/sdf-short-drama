@@ -1,0 +1,184 @@
+# ============================================================
+# SDF 栈 · 预设库
+#
+# 视觉风格预设（中文渲染提示词）、平台规格预设（横竖屏）、监控栏项目
+# 改完点「重载配置」即生效
+#
+# ⚠️ v0.5：风格预设改为**中文渲染提示词**。
+#    Wan2.2/H3 都原生支持中文，中文写光线/质感/色调更准；
+#    旧字段 en 保留只为兼容旧项目（language=en 时仍可用）
+# ============================================================
+
+# ---------------- 视觉风格预设 ----------------
+styles:
+  - id: urban-realism
+    zh: 都市写实
+    render: 现代都市写实风格，电影感，自然光，浅景深，35mm 胶片颗粒
+    en: modern urban realism, cinematic, natural lighting, shallow depth of field, 35mm film grain
+  - id: urban-night
+    zh: 都市夜景
+    render: 现代都市夜景，霓虹倒影，湿滑街道，青橙对比调色，电影感，虚化光斑
+    en: modern urban night, neon reflections, wet streets, teal and orange grading, cinematic, bokeh
+  - id: suspense
+    zh: 悬疑冷调
+    render: 悬疑惊悚风格，冷青色调，高对比阴影，压抑氛围，电影感
+    en: suspense thriller, cold blue-green grading, high contrast shadows, moody atmosphere, cinematic
+  - id: warm-romance
+    zh: 温情暖调
+    render: 温暖浪漫色调，柔和金色光线，轻柔虚化，明亮通透，电影感，胶片颗粒
+    en: warm romantic tone, soft golden light, gentle bokeh, pastel highlights, cinematic, film grain
+  - id: ancient-china
+    zh: 古风国潮
+    render: 中国古风美学，汉服质感，云雾山景，水墨意蕴配色，电影感
+    en: ancient Chinese aesthetic, hanfu costume, misty mountains, ink-wash inspired color palette, cinematic
+  - id: cyberpunk
+    zh: 赛博朋克
+    render: 赛博朋克风格，霓虹灯牌，雨后街道，品红与青色打光，高科技低生活，电影感
+    en: cyberpunk, neon signage, rain-slicked streets, magenta and cyan lighting, high tech low life, cinematic
+  - id: period-republic
+    zh: 民国风
+    render: 民国时期风格，老上海街景，暖褐色调，装饰艺术室内，电影感
+    en: Republic of China era 1930s, vintage Shanghai, warm sepia tones, art deco interiors, cinematic
+  - id: documentary
+    zh: 纪实风格
+    render: 纪实风格，手持镜头，自然光，真实皮肤质感，不做风格化
+    en: documentary style, handheld camera, natural available light, realistic skin texture, no stylization
+  - id: wasteland
+    zh: 废土荒漠
+    render: 废土荒漠风格，强烈日光，高对比暖赭色调，锈蚀金属质感，飞扬沙尘，电影感，胶片颗粒
+    en: post-apocalyptic wasteland, harsh sunlight, high contrast warm ochre grading, rusted metal texture, blowing sand, cinematic, film grain
+  - id: anime
+    zh: 二次元番剧
+    render: 二次元动画风格，赛璐璐上色，鲜艳色彩，干净线条，夸张眼神，制作水准高
+    en: anime style, cel shading, vibrant colors, clean line art, expressive eyes, studio quality
+  - id: ink-painting
+    zh: 水墨写意
+    render: 中国水墨写意风格，极简构图，大量留白，素雅单色点缀淡彩，艺术感
+    en: Chinese ink wash painting style, minimalist, negative space, muted monochrome with subtle color, artistic
+
+# ---------------- 平台规格预设 ----------------
+# v0.5：区分横屏/竖屏，并区分「渲染基准」与「交付规格」
+#   base     = 单镜渲染与成片画布（默认 720p，不隐式放大）
+#   delivery = 需要时点「超分」才到的交付分辨率
+platforms:
+  - id: douyin
+    zh: 抖音
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏，前3秒必须有钩子
+  - id: kuaishou
+    zh: 快手
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏，节奏比抖音稍缓
+  - id: hongguo
+    zh: 红果短剧
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 25
+    max_duration: 300
+    note: 竖屏，单集可到5分钟
+  - id: wechat-channels
+    zh: 微信视频号
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏
+  - id: bilibili
+    zh: B站
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 30
+    max_duration: 600
+    note: 横屏为主
+  - id: youtube
+    zh: YouTube
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 30
+    max_duration: 1800
+    note: 横屏长视频
+  - id: youtube-shorts
+    zh: YouTube Shorts
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 60
+    note: 竖屏，60秒内
+  - id: portrait-generic
+    zh: 通用竖屏（9:16）
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 24
+    max_duration: 0
+    note: 不针对具体平台
+  - id: landscape-generic
+    zh: 通用横屏（16:9）
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 24
+    max_duration: 0
+    note: 不针对具体平台
+
+# ---------------- 顶部监控栏 ----------------
+# 用户可在界面上勾选要显示哪些、以及刷新间隔；这里给默认值
+monitor:
+  refresh_sec: 15
+  enabled:
+    - gpu
+    - gpu_temp
+    - cpu
+    - mem
+    - swap
+    - disk
+    - disk_io
+    - net
+    - comfy
+    - llm
+    - queue
+  items:
+    - {key: gpu,          zh: 显存占用,   source: gpu_vram}
+    - {key: gpu_temp,     zh: GPU温度,    source: gpu_temp}
+    - {key: gpu_util,     zh: GPU利用率,  source: gpu_util}
+    - {key: cpu,          zh: CPU使用率,  source: cpu}
+    - {key: cpu_temp,     zh: CPU温度,    source: cpu_temp}
+    - {key: mem,          zh: 内存,       source: mem}
+    - {key: swap,         zh: SWAP,       source: swap}
+    - {key: disk,         zh: 磁盘,       source: disk}
+    - {key: disk_io,      zh: 磁盘IO,     source: disk_io}
+    - {key: net,          zh: 网络,       source: net}
+    - {key: comfy,        zh: ComfyUI,    source: comfy}
+    - {key: llm,          zh: LLM,        source: llm}
+    - {key: queue,        zh: 渲染队列,   source: queue}

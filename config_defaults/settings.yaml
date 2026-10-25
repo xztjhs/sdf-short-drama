@@ -1,0 +1,102 @@
+# ============================================================
+# SDF 栈 · 运行参数
+# 修改后：重启 api 容器，或在管理界面点「重载配置」
+# ============================================================
+
+app:
+  name: Short Drama Factory 短剧工厂
+  version: 0.6.0
+
+# 管理后台
+admin:
+  # 后台访问密码。留空=不校验（仅内网使用时可留空）
+  # 改完点「重载配置」即生效，不需要重启
+  password: ""
+
+render:
+  # 单卡串行，不要改。A5000 24GB 上 H3 峰值 22GB，并发必 OOM
+  max_concurrent: 1
+  # 单镜最长等待（秒）。768p 15s 约 35 分钟，留足余量
+  shot_timeout_sec: 7200
+  # ComfyUI 进度轮询间隔
+  poll_interval_sec: 3
+  # 每镜开始前释放显存（防止碎片累积）
+  free_vram_before_shot: true
+  # 镜间冷却（秒）。温度高时设 120，让 GPU 降降温
+  cooldown_between_shots_sec: 0
+  # 镜头衔接：把上一镜尾帧作为下一镜首帧，减少画面跳变
+  chain_frames: true
+  max_retries: 3
+  # v0.4 跨集渲染队列：服务启动时自动拉起消费者（重启后未完成项自动续跑）
+  queue_autostart: true
+  # v0.6 Ref2VA：有角色参考图时用参考图锁人物长相（关掉则退回"参考图当首帧"）
+  ref2va_enabled: true
+  # match=按生成面积缩放（快，默认）/ max=2048 短边（最像，但慢数倍）
+  ref2va_image_size: match
+  # 镜头衔接：只在同一场次内接帧（跨场次不接，否则会溶解变形）
+  chain_same_scene_only: true
+
+paths:
+  output_dir: /output
+  input_dir: /input
+  workflows_dir: /workflows
+  data_dir: /data
+
+# ComfyUI 对接（改完点「重载配置」即生效，不用重启容器）
+comfy:
+  # 渲染后端地址。同栈=docker 服务名；换机器就改成那台的 IP:端口
+  base_url: http://sdf-comfyui:8188
+  # 普通请求超时（秒）：状态查询、队列、上传图
+  request_timeout_sec: 30
+  # 提交工作流的超时（秒）：模型大时首次提交会慢
+  submit_timeout_sec: 60
+  # 单镜最长等待（秒）。768p 15s 约 35 分钟，留足余量
+  wait_timeout_sec: 7200
+  # 进度轮询间隔（秒）
+  poll_interval_sec: 3
+  # 每镜开始前释放显存（防碎片累积）
+  free_vram_before_shot: true
+
+storage:
+  # 成片后是否保留单镜片段（排查问题用，占空间）
+  keep_shot_fragments: true
+  # 成片后清理 _work 中间目录
+  cleanup_workdir_after_assemble: true
+
+assemble:
+  # v0.5：成片画布默认 = 渲染基准（720p），**不再隐式放大到 1080p**。
+  # 需要交付分辨率时点「超分」显式升到 1080p/2K/4K。
+  # 原因：之前 width/height=1080x1920 是平台交付规格，会让每个 720p 镜头
+  #      在 normalize 阶段被 Lanczos 拉大一次，等于白抬 2.25 倍像素量。
+  orientation: portrait     # portrait(竖屏) | landscape(横屏)
+  width: 720
+  height: 1280
+  fps: 24
+  # auto = 有 h264_nvenc 就用 NVENC（快 3-5 倍），否则 libx264
+  vcodec: auto
+  crf: 20
+  preset: medium
+  # 单流编码 16 线程足够，64 无额外收益
+  threads: 16
+  # 抖音/红果标准响度
+  lufs: -16.0
+  # pad=补黑边不裁画面 / crop=裁满
+  scale_mode: pad
+  burn_subtitles: true
+  # 字幕样式（v0.6.4）
+  subtitle:
+    font_size: 18
+    margin_v: 60
+    alignment: 2
+    font_name: Noto Sans CJK SC
+    outline: 2
+    shadow: 0
+
+ui:
+  page_size: 20
+  theme: dark
+
+logging:
+  level: INFO
+  max_files: 5
+  max_size_mb: 50

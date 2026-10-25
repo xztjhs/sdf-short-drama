@@ -1,0 +1,33 @@
+# 运行时数据
+models/
+output/
+input/
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm
+*.safetensors
+*.part
+*.mp4
+*.jpg
+*.jpeg
+*.png
+
+# 密钥
+config/secrets.env
+.env
+secrets.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 本地覆盖
+*.local

@@ -1,0 +1,143 @@
+# ============================================================
+# SDF 栈 —— 短剧工厂
+#
+# ⚠️ 底线（2026-10-23 老板定）：本栈**强制**用 docker compose 聚合管理。
+#   - 栈名固定 `sdf`，容器固定 `sdf-api` / `sdf-comfyui`
+#   - 只允许 `docker compose -p sdf ...` 启停；禁止 docker run / Portainer /
+#     Unraid Docker 页单独启停这些容器（会造成配置漂移、环境变量丢失）
+#   - 排障用 `docker compose ps/logs`，不要 `docker restart <容器名>`
+#   背景：旧版顶层写 `name: video`，`docker compose ls` 显示 video，
+#         在 Unraid 里看起来像两个孤立容器，容易误用单容器方式操作。
+# ============================================================
+name: sdf
+
+# ============================================================
+# SDF 栈 —— 短剧工厂
+#
+# 目录约定（全部在 /mnt/disks/nvme/docker/compose/sdf）：
+#   config/    ← 所有可编辑配置（改完点重载或重启 api 生效）
+#   models/    → /models     模型权重
+#   output/    → /output     渲染产物
+#   input/     → /input      参考图/首帧
+#   data/      → /data       SQLite、自定义节点
+#   logs/      → /logs       容器日志外挂
+#   workflows/ → /workflows  ComfyUI 工作流
+# ============================================================
+
+services:
+  comfyui:
+    # 国内直连 Docker Hub 只有 ~580KB/s；docker.1ms.run 实测可用
+    # 拉完后 retag：docker tag docker.1ms.run/yanwk/comfyui-boot:cu126-slim-20261019 yanwk/comfyui-boot:cu126-slim-20261019
+    image: yanwk/comfyui-boot:cu126-slim-20261019
+    container_name: sdf-comfyui
+    restart: unless-stopped
+    ports:
+      - "8188:8188"
+    environment:
+      # ---- 24GB 显存必需，缺一即 OOM ----
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      CLI_ARGS: >-
+        --listen 0.0.0.0
+        --port 8188
+        --disable-pinned-memory
+        --fp16-intermediates
+        --reserve-vram 2.5
+        --disable-auto-launch
+      # ---- 国内加速 ----
+      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+      HF_ENDPOINT: https://hf-mirror.com
+    volumes:
+      - ./models:/root/ComfyUI/models
+      - ./output:/root/ComfyUI/output
+      - ./input:/root/ComfyUI/input
+      - ./workflows:/root/ComfyUI/user/default/workflows
+      - ./data/comfyui-custom-nodes:/root/ComfyUI/custom_nodes
+      - ./logs:/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    # ⚠️ 本机（Unraid 7.3.2 / Docker 29.5.3）上，由 dockerd 发起的 healthcheck
+    #   走 runc exec 会稳定失败（open /run/user/0/runc-process...: no such file），
+    #   而手动 docker exec 10/10 成功 → daemon 侧缺陷，误判 unhealthy。
+    #   改由 api 的 /api/health 统一探活（它会真去请求 ComfyUI /system_stats）。
+    healthcheck:
+      disable: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  api:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    image: sdf-api:local
+    container_name: sdf-api
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    environment:
+      SDF_COMFYUI_URL: http://sdf-comfyui:8188
+      SDF_CONFIG_DIR: /config
+      SDF_DATA_DIR: /data
+      SDF_MODELS_DIR: /models
+      SDF_OUTPUT_DIR: /output
+      SDF_DB_PATH: /data/sdf.db
+    volumes:
+      # 配置目录：所有设置项都在这里，可直接线下编辑
+      - ./config:/config
+      - ./data:/data
+      - ./output:/output
+      - ./input:/input
+      # 可写：后台「模型下载」要往这里落盘
+      - ./models:/models
+      - ./workflows:/workflows:ro
+      - ./logs:/logs
+    depends_on:
+      comfyui:
+        condition: service_started
+    # 只给“查询”能力（utility），不给 compute —— 容器内能跑 nvidia-smi，
+    # 但抢不了显存。渲染前预检靠它判断有没有外部进程占着 GPU。
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [utility]
+    healthcheck:
+      disable: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # 成片层：纯 CPU，NVENC 走 GPU。只在需要手动转码时用
+  encoder:
+    image: jrottenberg/ffmpeg:7.1-nvidia
+    container_name: sdf-encoder
+    restart: "no"
+    profiles: ["tools"]
+    entrypoint: ["ffmpeg"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, video]
+    volumes:
+      - ./output:/output
+      - ./input:/input
+      - ./data:/data
+      - ./config:/config:ro

@@ -1,0 +1,184 @@
+# ============================================================
+# SDF 栈 · 预设库
+#
+# 视觉风格预设（中文渲染提示词）、平台规格预设（横竖屏）、监控栏项目
+# 改完点「重载配置」即生效
+#
+# ⚠️ v0.5：风格预设改为**中文渲染提示词**。
+#    Wan2.2/H3 都原生支持中文，中文写光线/质感/色调更准；
+#    旧字段 en 保留只为兼容旧项目（language=en 时仍可用）
+# ============================================================
+
+# ---------------- 视觉风格预设 ----------------
+styles:
+  - id: urban-realism
+    zh: 都市写实
+    render: 现代都市写实风格，电影感；自然光为主，午后斜射的阳光穿过楼宇间隙；色彩饱和度中等，肤色还原真实；浅景深，35mm 胶片颗粒；手持感轻微稳定
+    en: modern urban realism, cinematic, natural lighting, shallow depth of field, 35mm film grain
+  - id: urban-night
+    zh: 都市夜景
+    render: 现代都市夜景，电影感；霓虹灯牌做主光源，品红与青色打光；湿滑街道反射灯光，地面积水倒影；色温偏冷，高光溢出控制；大光圈虚化光斑
+    en: modern urban night, neon reflections, wet streets, teal and orange grading, cinematic, bokeh
+  - id: suspense
+    zh: 悬疑冷调
+    render: 悬疑惊悚风格，电影感；冷青色调，高对比阴影；光源单一且方向明确，暗部细节保留；压迫氛围通过窄构图与低机位实现；手持感轻微稳定
+    en: suspense thriller, cold blue-green grading, high contrast shadows, moody atmosphere, cinematic
+  - id: warm-romance
+    zh: 温情暖调
+    render: 温暖浪漫色调，电影感；柔和金色光线，逆光勾边；轻柔虚化，明亮通透；色温偏暖，肤色红润；镜头运动缓慢克制
+    en: warm romantic tone, soft golden light, gentle bokeh, pastel highlights, cinematic, film grain
+  - id: ancient-china
+    zh: 古风国潮
+    render: 中国古风美学，宋式庭院与木构建筑，青灰瓦顶、白墙、竹影；人物着素色交领汉服，衣料为哑光棉麻与薄纱；电影感，自然光为主；晨间侧逆光穿过窗棂形成光柱；青绿与米白为主，低饱和，暗部偏青；棉麻哑光、木纹、宣纸、青苔石阶；固定中景为主，缓慢横移看庭院；风过竹叶、檐角铁马、远处木鱼、衣料摩擦；不要现代物件、不要塑料感衣料、不要浓艳饱和色
+    en: ancient Chinese aesthetic, Song-dynasty courtyard and timber architecture, grey tiles and white walls, bamboo shadows, hanfu in muted linen and gauze, cinematic, natural light
+  - id: cyberpunk
+    zh: 赛博朋克
+    render: 赛博朋克风格，霓虹灯牌，雨后街道，品红与青色打光，高科技低生活，电影感；雨滴在空气中折射霓虹；高对比，暗部有灯光细节；手持感轻微稳定
+    en: cyberpunk, neon signage, rain-slicked streets, magenta and cyan lighting, high tech low life, cinematic
+  - id: period-republic
+    zh: 民国风
+    render: 民国时期风格，老上海街景，暖褐色调，装饰艺术室内，电影感；自然光加铇丝灯光源；人物着长衫或旗袍，布料哑光；固定机位为主，缓慢推拉；黄包车轮声、远处电车铃、衣料摩擦；不要现代物件、不要塑料感衣料、不要浓艳饱和色
+    en: Republic of China era 1930s, vintage Shanghai, warm sepia tones, art deco interiors, cinematic
+  - id: documentary
+    zh: 纪实风格
+    render: 纪实风格，手持镜头，自然光，真实皮肤质感，不做风格化；色温还原现场；镜头轻微晃动；现场环境声为主，不加背景音乐
+    en: documentary style, handheld camera, natural available light, realistic skin texture, no stylization
+  - id: wasteland
+    zh: 废土荒漠
+    render: 废土荒漠风格，强烈日光，高对比暖赭色调，锈蚀金属质感，飞扬沙尘，电影感，胶片颗粒；天空过曝，地面阴影硬朗；固定机位与缓慢横移；风沙声、金属吱呀、远处闷雷；不要现代城市、不要塑料感、不要鲜艳绿色植物
+    en: post-apocalyptic wasteland, harsh sunlight, high contrast warm ochre grading, rusted metal texture, blowing sand, cinematic, film grain
+  - id: anime
+    zh: 二次元番剧
+    render: 二次元动画风格，赛璐璐上色，鲜艳色彩，干净线条，夸张眼神，制作水准高；光照做二值化处理，高光锐利；镜头运动夸张；台词口语化，背景音乐为动漫风格
+    en: anime style, cel shading, vibrant colors, clean line art, expressive eyes, studio quality
+  - id: ink-painting
+    zh: 水墨写意
+    render: 中国水墨写意风格，极简构图，大量留白，素雅单色点缀淡彩，艺术感；墨色浓淡干湿变化，笔触可见；固定机位，画面几乎静止；古琴声、风声、水滴声；不要鲜艳色彩、不要现代物件、不要复杂纹理
+    en: Chinese ink wash painting style, minimalist, negative space, muted monochrome with subtle color, artistic
+
+# ---------------- 平台规格预设 ----------------
+# v0.5：区分横屏/竖屏，并区分「渲染基准」与「交付规格」
+#   base     = 单镜渲染与成片画布（默认 720p，不隐式放大）
+#   delivery = 需要时点「超分」才到的交付分辨率
+platforms:
+  - id: douyin
+    zh: 抖音
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏，前3秒必须有钩子
+  - id: kuaishou
+    zh: 快手
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏，节奏比抖音稍缓
+  - id: hongguo
+    zh: 红果短剧
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 25
+    max_duration: 300
+    note: 竖屏，单集可到5分钟
+  - id: wechat-channels
+    zh: 微信视频号
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 180
+    note: 竖屏
+  - id: bilibili
+    zh: B站
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 30
+    max_duration: 600
+    note: 横屏为主
+  - id: youtube
+    zh: YouTube
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 30
+    max_duration: 1800
+    note: 横屏长视频
+  - id: youtube-shorts
+    zh: YouTube Shorts
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 30
+    max_duration: 60
+    note: 竖屏，60秒内
+  - id: portrait-generic
+    zh: 通用竖屏（9:16）
+    orientation: portrait
+    aspect: "9:16"
+    base: {width: 720, height: 1280}
+    width: 1080
+    height: 1920
+    fps: 24
+    max_duration: 0
+    note: 不针对具体平台
+  - id: landscape-generic
+    zh: 通用横屏（16:9）
+    orientation: landscape
+    aspect: "16:9"
+    base: {width: 1280, height: 720}
+    width: 1920
+    height: 1080
+    fps: 24
+    max_duration: 0
+    note: 不针对具体平台
+
+# ---------------- 顶部监控栏 ----------------
+# 用户可在界面上勾选要显示哪些、以及刷新间隔；这里给默认值
+monitor:
+  refresh_sec: 15
+  enabled:
+    - gpu
+    - gpu_temp
+    - cpu
+    - mem
+    - swap
+    - disk
+    - disk_io
+    - net
+    - comfy
+    - llm
+    - queue
+  items:
+    - {key: gpu,          zh: 显存占用,   source: gpu_vram}
+    - {key: gpu_temp,     zh: GPU温度,    source: gpu_temp}
+    - {key: gpu_util,     zh: GPU利用率,  source: gpu_util}
+    - {key: cpu,          zh: CPU使用率,  source: cpu}
+    - {key: cpu_temp,     zh: CPU温度,    source: cpu_temp}
+    - {key: mem,          zh: 内存,       source: mem}
+    - {key: swap,         zh: SWAP,       source: swap}
+    - {key: disk,         zh: 磁盘,       source: disk}
+    - {key: disk_io,      zh: 磁盘IO,     source: disk_io}
+    - {key: net,          zh: 网络,       source: net}
+    - {key: comfy,        zh: ComfyUI,    source: comfy}
+    - {key: llm,          zh: LLM,        source: llm}
+    - {key: queue,        zh: 渲染队列,   source: queue}

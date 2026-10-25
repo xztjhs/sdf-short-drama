@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDF · 后台管理</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3240;
+  --text:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --ok:#3fb950;
+  --warn:#d29922; --err:#f85149; --h3:#a371f7; --wan:#2ea043;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;border-radius:6px;padding:8px 16px;
+  background:var(--accent);color:#fff;transition:.15s}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+button.danger{background:var(--err)}
+button.sm{padding:4px 10px;font-size:12px}
+input,textarea,select{font:inherit;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+textarea{resize:vertical;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;line-height:1.5}
+label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;
+  background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+header h1{font-size:16px;font-weight:600}
+header h1 span{color:var(--accent)}
+.back-link{font-size:13px;color:var(--dim);padding:5px 12px;border:1px solid var(--line);
+  border-radius:6px;text-decoration:none;white-space:nowrap;transition:.15s}
+.back-link:hover{color:var(--text);border-color:var(--accent);background:var(--panel2)}
+.sysbar{display:flex;gap:16px;margin-left:auto;font-size:12px;color:var(--dim);flex-wrap:wrap}
+.sysbar b{color:var(--text)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--err)} .dot.warn{background:var(--warn)}
+
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 57px)}
+nav{background:var(--panel);border-right:1px solid var(--line);padding:12px 8px}
+nav .item{padding:9px 14px;border-radius:6px;cursor:pointer;font-size:13px;
+  color:var(--dim);margin-bottom:2px;transition:.12s}
+nav .item:hover{background:var(--panel2);color:var(--text)}
+nav .item.active{background:var(--panel2);color:var(--text);font-weight:600}
+nav .item .ico{display:inline-block;width:18px;opacity:.8}
+main{padding:20px;overflow-x:auto}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:16px;margin-bottom:16px}
+.card h2{font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 .tag{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--panel2);color:var(--dim);font-weight:400}
+
+.row{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap}
+.row>div{flex:1;min-width:180px}
+.row .fixed{flex:0 0 auto;min-width:auto}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;white-space:nowrap}
+td{vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.pill.ok,.pill.done{background:#12351f;color:var(--ok)}
+.pill.bad,.pill.failed{background:#3d1418;color:var(--err)}
+.pill.warn,.pill.running{background:#3d2f00;color:var(--warn)}
+.pill.dim{background:#30363d;color:var(--dim)}
+.pill.h3{background:rgba(163,113,247,.18);color:var(--h3)}
+.pill.wan22{background:rgba(46,160,67,.18);color:var(--wan)}
+
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--panel2);border-radius:6px;padding:12px}
+.stat .v{font-size:20px;font-weight:600}
+.stat .k{font-size:11px;color:var(--dim)}
+
+.log{background:#010409;border:1px solid var(--line);border-radius:6px;
+  padding:10px;font-family:ui-monospace,monospace;font-size:12px;
+  max-height:420px;overflow:auto;line-height:1.65;white-space:pre-wrap;word-break:break-all}
+
+.hint{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5}
+.hint code{background:var(--panel2);padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--panel2);
+  border:1px solid var(--line);border-left:3px solid var(--accent);
+  padding:12px 18px;border-radius:6px;font-size:13px;z-index:100;
+  opacity:0;transform:translateY(10px);transition:.25s;max-width:420px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.err{border-left-color:var(--err)}
+.toast.ok{border-left-color:var(--ok)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 14px;cursor:pointer;color:var(--dim);font-size:13px;
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+.switch{position:relative;display:inline-block;width:38px;height:20px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#30363d;border-radius:10px;transition:.2s}
+.slider:before{position:absolute;content:"";height:14px;width:14px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.2s}
+input:checked+.slider{background:var(--ok)}
+input:checked+.slider:before{transform:translateX(18px)}
+
+.mono{font-family:ui-monospace,monospace;font-size:12px}
+.muted{color:var(--dim)}
+.flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* 弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:20px;width:min(620px,100%);max-height:88vh;overflow-y:auto;
+  box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.modal h3{font-size:15px;margin-bottom:6px}
+.modal .row>div{min-width:150px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ SDF <span>后台管理</span></h1>
+  <a href="/" class="back-link" title="返回创作界面">← 返回前台</a>
+  <div class="sysbar" id="sysbar"></div>
+</header>
+
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"><div class="muted">加载中…</div></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// 按业务流程排序：
+//   1 总览(看状态) → 2 接后端(ComfyUI) → 3 装模型 → 4 配 LLM/提示词
+//   → 5 调渲染(引擎/路由) → 6 定风格平台 → 7 系统设置 → 8 数据与诊断
+const SECTIONS = [
+  ['overview','📊','总览'],
+  ['comfy',   '🔌','ComfyUI 对接'],
+  ['models',  '🧩','模型接入'],
+  ['prompts', '✍️','LLM 与提示词'],
+  ['engines', '⚙','引擎参数'],
+  ['routing', '🚦','路由策略'],
+  ['presets', '🎨','风格与平台'],
+  ['secrets', '🔑','API KEY'],
+  ['settings','🛠','设置项'],
+  ['files',   '📁','文件管理'],
+  ['config',  '📝','配置文件'],
+  ['tasks',   '📋','任务日志'],
+];
+let state = { section:'overview', data:{} };
+
+// 配置字段中文名（后台表单用；找不到就显示原名）
+const FIELD_ZH = {
+  app:'应用', name:'名称', version:'版本',
+  render:'渲染', max_concurrent:'最大并发', shot_timeout_sec:'单镜超时(秒)',
+  poll_interval_sec:'轮询间隔(秒)', free_vram_before_shot:'每镜前释放显存',
+  cooldown_between_shots_sec:'镜头间冷却(秒)', max_retries:'最大重试次数',
+  paths:'路径', output_dir:'产物目录', input_dir:'输入目录',
+  workflows_dir:'工作流目录', data_dir:'数据目录',
+  comfy:'ComfyUI', base_url:'后端地址', request_timeout_sec:'请求超时(秒)',
+  submit_timeout_sec:'提交超时(秒)', wait_timeout_sec:'等待上限(秒)',
+  storage:'存储', keep_shot_fragments:'保留单镜片段',
+  cleanup_workdir_after_assemble:'成片后清理中间目录',
+  assemble:'成片', width:'宽度', height:'高度', fps:'帧率', crf:'画质(CRF)',
+  preset:'编码预设', threads:'编码线程', lufs:'响度(LUFS)',
+  scale_mode:'缩放方式', burn_subtitles:'烧录字幕',
+  ui:'界面', page_size:'每页条数', theme:'主题',
+  logging:'日志', level:'级别', max_files:'保留文件数', max_size_mb:'单文件上限(MB)',
+  models_dir:'模型目录',
+  llm:'LLM', default_model:'默认模型', fallback_model:'降级模型',
+  temperature:'温度', max_tokens:'最大token', timeout_sec:'超时(秒)',
+  enabled:'启用', refresh_sec:'刷新间隔(秒)', items:'监控项',
+  styles:'风格预设', platforms:'平台预设', monitor:'监控栏',
+  admin:'后台安全', password:'后台密码',
+};
+// 配置分组中文名
+const GROUP_ZH = {
+  app:'应用信息', render:'渲染', paths:'路径', storage:'存储',
+  assemble:'成片规格', ui:'界面', logging:'日志', admin:'后台安全',
+};
+
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toast(m,k=''){const t=$('#toast');t.textContent=m;t.className='toast show '+k;
+  clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3000)}
+function bytes(n){if(!n)return'0 B';const u=['B','KB','MB','GB','TB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i?1:0)+' '+u[i]}
+function ago(ts){if(!ts)return'-';const d=(Date.now()/1000)-ts;
+  if(d<60)return Math.round(d)+'秒前';if(d<3600)return Math.round(d/60)+'分前';
+  if(d<86400)return Math.round(d/3600)+'小时前';return new Date(ts*1000).toLocaleDateString('zh-CN')}
+
+async function api(path, opts={}){
+  const r = await fetch(path,{headers:{'Content-Type':'application/json'},...opts});
+  if(!r.ok){let t=await r.text();throw new Error(t.slice(0,300))}
+  return r.json();
+}
+
+// ---------- system bar ----------
+async function refreshSys(){
+  try{
+    const s = await api('/api/admin/system');
+    const g=s.gpu, m=s.memory;
+    const p=[];
+    if(g)p.push(`<span><span class="dot ${g.util_pct>5?'warn':'ok'}"></span>GPU <b>${(g.vram_used_mb/1024)|0}/${(g.vram_total_mb/1024)|0}GB</b>${g.temp_c!=null?` · ${g.temp_c}°C`:''}${g.power_w?` · ${g.power_w}W`:''}</span>`);
+    if(m)p.push(`<span>内存 <b>${m.available_gb}GB</b> 可用${m.swap_gb==0?' <span style="color:var(--warn)">无swap</span>':''}</span>`);
+    p.push(`<span><span class="dot ${s.comfy.alive?'ok':'bad'}"></span>ComfyUI</span>`);
+    p.push(`<span><span class="dot ${s.llm.configured?'ok':'bad'}"></span>LLM <b>${esc(s.llm.model)}</b></span>`);
+    p.push(`<span class="muted">v${esc(s.version)}</span>`);
+    $('#sysbar').innerHTML=p.join('');
+  }catch(e){$('#sysbar').innerHTML=`<span class="dot bad"></span>${esc(e.message)}`}
+}
+
+// ---------- nav ----------
+function renderNav(){
+  $('#nav').innerHTML = SECTIONS.map(([k,i,n])=>
+    `<div class="item ${state.section===k?'active':''}" onclick="go('${k}')">
+      <span class="ico">${i}</span>${n}</div>`).join('');
+}
+function go(k){ state.section=k; renderNav(); render() }
+
+// ---------- router ----------
+async function render(){
+  const m=$('#main');
+  try{
+    if(state.section==='overview') return await renderOverview(m);
+    if(state.section==='comfy') return await renderComfy(m);
+    if(state.section==='settings') return await renderSettings(m);
+    if(state.section==='models') return await renderModels(m);
+    if(state.section==='prompts') return await renderPrompts(m);
+    if(state.section==='routing') return await renderYamlSection(m,'routing','路由策略','🚦');
+    if(state.section==='engines') return await renderYamlSection(m,'engines','引擎参数','⚙');
+    if(state.section==='presets') return await renderPresets(m);
+    if(state.section==='secrets') return await renderSecrets(m);
+    if(state.section==='files') return await renderFiles(m);
+    if(state.section==='config') return await renderConfigFiles(m);
+    if(state.section==='tasks') return await renderTasks(m);
+  }catch(e){ m.innerHTML=`<div class="card"><h2>❌ 加载失败</h2><div class="log">${esc(e.message)}</div></div>` }
+}
+
+// ---------- 总览 ----------
+async function renderOverview(m){
+  const s = await api('/api/admin/system');
+  const cfgd = await api('/api/admin/config');
+  const inv = s.models || [];
+  const req = inv.filter(x=>x.required);
+  const reqOk = req.filter(x=>x.complete).length;
+  const g=s.gpu, mem=s.memory, dk=s.disk;
+
+  m.innerHTML = `
+  <div class="card"><h2>平台状态 <span class="tag">v${esc(s.version)}</span></h2>
+    <div class="grid4">
+      <div class="stat"><div class="v">${g?((g.vram_used_mb/1024).toFixed(1)):'-'}</div><div class="k">显存占用 GB</div></div>
+      <div class="stat"><div class="v">${g&&g.temp_c!=null?g.temp_c:'-'}</div><div class="k">GPU 温度 °C</div></div>
+      <div class="stat"><div class="v">${mem?mem.available_gb:'-'}</div><div class="k">可用内存 GB</div></div>
+      <div class="stat"><div class="v">${dk?dk.free_gb:'-'}</div><div class="k">磁盘可用 GB</div></div>
+      <div class="stat"><div class="v">${reqOk}/${req.length}</div><div class="k">必需模型</div></div>
+      <div class="stat"><div class="v">${s.stats.total}</div><div class="k">镜头总数</div></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>模型完整性</h2>
+    <table><thead><tr><th>模型</th><th>类型</th><th>期望</th><th>实际</th><th>状态</th></tr></thead>
+    <tbody>${inv.map(x=>`<tr>
+      <td>${esc(x.name)}<div class="muted mono">${esc(x.file)}</div></td>
+      <td><span class="pill ${x.engine}">${esc(x.engine)}</span></td>
+      <td class="mono">${x.size_gb} GB</td>
+      <td class="mono">${x.present?x.actual_gb+' GB':'-'}</td>
+      <td>${x.complete?'<span class="pill ok">完整</span>':
+           x.present?'<span class="pill warn">大小不符</span>':
+           '<span class="pill '+(x.required?'bad':'dim')+'">缺失</span>'}</td>
+    </tr>`).join('')}</tbody></table>
+  </div>
+
+  <div class="card"><h2>配置与密钥</h2>
+    <table><thead><tr><th>文件</th><th>路径</th><th>大小</th><th>更新时间</th></tr></thead>
+    <tbody>${cfgd.files.map(f=>`<tr>
+      <td class="mono">${esc(f.name)}</td>
+      <td class="muted mono">${esc(f.path)}</td>
+      <td class="mono">${f.exists?bytes(f.size):'<span class="pill bad">缺失</span>'}</td>
+      <td class="muted">${f.mtime?ago(f.mtime):'-'}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="hint">所有配置都在 <code>${esc(files_root_hint())}</code> 下，可直接改文件后点「重载配置」。</div>
+    <div class="flex" style="margin-top:12px">
+      <button class="ghost" onclick="reloadCfg()">↻ 重载全部配置</button>
+      <button class="ghost" onclick="testLLM()">🧪 测试 LLM</button>
+    </div>
+  </div>`;
+}
+function files_root_hint(){ return '/mnt/disks/nvme/docker/compose/sdf/config' }
+
+async function reloadCfg(){
+  try{ const r=await api('/api/admin/config/reload',{method:'POST'});
+    toast('已重载: '+r.snapshot_keys.join(', '),'ok'); render();
+  }catch(e){toast('重载失败: '+e.message,'err')}
+}
+async function testLLM(){
+  toast('测试中…');
+  try{ const r=await api('/api/admin/llm/test');
+    toast(r.ok?`✅ LLM 正常 ${r.latency_ms}ms`:`❌ ${r.error}`, r.ok?'ok':'err');
+  }catch(e){toast(e.message,'err')}
+}
+
+// ---------- ComfyUI 对接 ----------
+async function renderComfy(m){
+  const d = await api('/api/admin/comfy');
+  const c = d.config || {};
+  const live = d.live || {};
+  const ok = !!live.alive;
+
+  m.innerHTML = `
+  <div class="card"><h2>ComfyUI 对接 <span class="tag">settings.yaml → comfy</span>
+    <span class="pill ${ok?'ok':'bad'}">${ok?'在线':'离线'}</span></h2>
+    <div class="hint" style="margin-bottom:14px">
+      渲染后端地址。同栈用 docker 服务名 <code>http://sdf-comfyui:8188</code>；
+      换机器就改成对方的 <code>http://IP:端口</code>。改完点「保存并重载」，不用重启容器。
+    </div>
+
+    <div class="row">
+      <div style="flex:2"><label>后端地址 base_url</label>
+        <input id="cf_url" value="${esc(c.base_url||'')}"></div>
+      <div class="fixed" style="align-self:flex-end">
+        <button class="ghost" onclick="testComfy()">测连通</button></div>
+    </div>
+
+    <div class="row">
+      <div><label>请求超时 request_timeout（秒）</label>
+        <input id="cf_req" type="number" value="${c.request_timeout_sec??30}"></div>
+      <div><label>提交超时 submit_timeout（秒）</label>
+        <input id="cf_sub" type="number" value="${c.submit_timeout_sec??60}"></div>
+      <div><label>单镜等待上限 wait_timeout（秒）</label>
+        <input id="cf_wait" type="number" value="${c.wait_timeout_sec??7200}"></div>
+    </div>
+
+    <div class="row">
+      <div><label>进度轮询间隔（秒）</label>
+        <input id="cf_poll" type="number" step="0.5" value="${c.poll_interval_sec??3}"></div>
+      <div><label>每镜开始前释放显存</label>
+        <label class="switch"><input type="checkbox" id="cf_free" ${c.free_vram_before_shot!==false?'checked':''}>
+        <span class="slider"></span></label></div>
+      <div></div>
+    </div>
+
+    <div class="flex" style="margin-top:14px">
+      <button onclick="saveComfy()">保存并重载</button>
+    </div>
+    <div id="cf_out" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card"><h2>实时状态</h2>
+    ${ok?`
+    <div class="grid4">
+      <div class="stat"><div class="v">${esc(live.comfyui_version||'-')}</div><div class="k">ComfyUI 版本</div></div>
+      <div class="stat"><div class="v">${esc(live.pytorch_version||'-')}</div><div class="k">PyTorch</div></div>
+      <div class="stat"><div class="v">${live.ram_free_gb??'-'}</div><div class="k">可用内存 GB</div></div>
+      <div class="stat"><div class="v">${(live.devices||[]).length}</div><div class="k">GPU 数</div></div>
+    </div>
+    ${(live.devices||[]).map(x=>`<div class="hint" style="margin-top:8px">
+      ${esc(x.name)} · 显存 ${x.vram_free_gb} / ${x.vram_total_gb} GB 空闲</div>`).join('')}
+    `:`<div class="log">${esc(live.error||'无法连接，请检查地址与容器状态')}</div>`}
+    <div class="hint" style="margin-top:10px">实际生效地址：<code>${esc(d.effective_url)}</code></div>
+  </div>`;
+}
+
+window.testComfy=async function(){
+  const url=$('#cf_url').value.trim();
+  const out=$('#cf_out'); out.innerHTML='<span class="muted">测试中…</span>';
+  try{
+    const r=await api('/api/admin/comfy/test',{method:'POST',body:JSON.stringify({base_url:url})});
+    out.innerHTML = r.ok
+      ? `<div class="pill ok">✓ 连通 ${r.latency_ms}ms · 版本 ${esc(r.comfyui_version||'?')} · GPU ${(r.devices||[]).length}</div>`
+      : `<div class="pill bad">✗ ${esc(r.error||'失败')}</div>`;
+  }catch(e){ out.innerHTML=`<div class="pill bad">${esc(e.message)}</div>` }
+};
+
+window.saveComfy=async function(){
+  try{
+    const sec = await api('/api/admin/config/settings');
+    const data = sec.data || {};
+    data.comfy = data.comfy || {};
+    data.comfy.base_url = $('#cf_url').value.trim();
+    data.comfy.request_timeout_sec = +$('#cf_req').value || 30;
+    data.comfy.submit_timeout_sec = +$('#cf_sub').value || 60;
+    data.comfy.wait_timeout_sec = +$('#cf_wait').value || 7200;
+    data.comfy.poll_interval_sec = +$('#cf_poll').value || 3;
+    data.comfy.free_vram_before_shot = $('#cf_free').checked;
+    const r = await api('/api/admin/config',{method:'PUT',
+      body:JSON.stringify({section:'settings',data})});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok');
+    setTimeout(()=>render(),400);
+  }catch(e){ toast('保存失败: '+e.message,'err') }
+};
+
+// ---------- 设置项（表单） ----------
+async function renderSettings(m){
+  const d = await api('/api/admin/config/settings');
+  const s = d.data;
+  m.innerHTML = `
+  <div class="card"><h2>设置项 <span class="tag">settings.yaml</span></h2>
+    <div class="hint" style="margin-bottom:14px">
+      改完点保存，写回 <code>config/settings.yaml</code>（自动备份旧版本），立即生效。
+    </div>
+    <div class="tabs" id="stab"></div>
+    <div id="sform"></div>
+  </div>`;
+  // comfy 有独立主菜单，设置项里不再重复出现（改动统一走 ComfyUI 对接页）
+  const groups = Object.keys(s).filter(g => g !== 'comfy');
+  const st = $('#stab');
+  st.innerHTML = groups.map((g,i)=>`<div class="tab ${i===0?'active':''}" onclick="pickGroup('${g}',this)">${GROUP_ZH[g]||g}</div>`).join('');
+  window._settings = s; window._group = groups[0];
+  drawGroup(groups[0]);
+}
+window.pickGroup=function(g,el){
+  document.querySelectorAll('#stab .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); window._group=g; drawGroup(g);
+};
+function drawGroup(g){
+  const s=window._settings[g]||{};
+  const f=$('#sform');
+  f.innerHTML = Object.entries(s).map(([k,v])=>fieldRow(k,v,g)).join('') +
+    `<button onclick="saveSettings()" style="margin-top:8px">保存「${GROUP_ZH[g]||g}」</button>`;
+}
+function fieldRow(k,v,g){
+  const id=`f_${g}_${k}`;
+  const zh=FIELD_ZH[k]||'';
+  const lbl=zh?`${zh}<span class="muted" style="font-weight:400"> / ${k}</span>`:k;
+  if(typeof v==='boolean')
+    return `<div class="row"><div><label>${lbl}</label>
+      <label class="switch"><input type="checkbox" id="${id}" ${v?'checked':''}><span class="slider"></span></label></div></div>`;
+  if(typeof v==='number')
+    return `<div class="row"><div><label>${lbl}</label>
+      <input type="number" step="any" id="${id}" value="${v}"></div></div>`;
+  if(typeof v==='object'&&v!==null)
+    return `<div class="row"><div><label>${lbl}（JSON）</label>
+      <textarea id="${id}" rows="4">${esc(JSON.stringify(v,null,2))}</textarea></div></div>`;
+  return `<div class="row"><div><label>${lbl}</label>
+    <input type="text" id="${id}" value="${esc(v)}"></div></div>`;
+}
+window.saveSettings=async function(){
+  const g=window._group, s=JSON.parse(JSON.stringify(window._settings));
+  for(const [k,v] of Object.entries(s[g])){
+    const el=document.getElementById(`f_${g}_${k}`); if(!el)continue;
+    if(typeof v==='boolean') s[g][k]=el.checked;
+    else if(typeof v==='number') s[g][k]=el.value===''?null:Number(el.value);
+    else if(typeof v==='object'&&v!==null){
+      try{s[g][k]=JSON.parse(el.value)}catch(e){return toast(`${k} 不是合法 JSON`,'err')}
+    } else s[g][k]=el.value;
+  }
+  try{
+    const r=await api('/api/admin/config',{method:'PUT',
+      body:JSON.stringify({section:'settings',data:s})});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok');
+  }catch(e){toast('保存失败: '+e.message,'err')}
+};
+
+// ---------- 模型接入 ----------
+async function renderModels(m){
+  const d = await api('/api/admin/models');
+  m.innerHTML = `
+  <div class="card"><h2>模型接入 <span class="tag">models.yaml</span>
+    <span class="tag">目录 ${esc(d.models_dir)}</span></h2>
+    <div class="flex" style="margin-bottom:12px">
+      <button class="ghost sm" onclick="checkModels()">🔍 检查文件</button>
+      <button class="ghost sm" onclick="addModel()">+ 手动添加</button>
+      <button class="sm" onclick="openDownloadDialog()">⬇ 下载模型</button>
+    </div>
+    <table><thead><tr><th>启用</th><th>模型</th><th>引擎</th><th>类型</th><th>文件</th><th>大小</th><th>校验</th><th>操作</th></tr></thead>
+    <tbody>${d.models.map(x=>`<tr>
+      <td><label class="switch"><input type="checkbox" ${x.enabled?'checked':''}
+        ${x.required?'disabled':''} onchange="toggleModel('${x.id}',this.checked)">
+        <span class="slider"></span></label></td>
+      <td>${esc(x.name)}${x.required?' <span class="pill warn">必需</span>':''}
+        ${x.note?`<div class="muted" style="font-size:11px">${esc(x.note)}</div>`:''}
+        <div class="muted mono" style="font-size:10px">id: ${esc(x.id)}</div></td>
+      <td><span class="pill ${x.engine}">${esc(x.engine)}</span></td>
+      <td class="muted">${esc(x.kind)}</td>
+      <td class="mono muted" style="font-size:11px">${esc(x.file)}</td>
+      <td class="mono">${x.size_gb} GB</td>
+      <td>${x.complete?'<span class="pill ok">✓</span>':
+           x.present?'<span class="pill warn">大小不符</span>':
+           '<span class="pill bad">缺失</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="sm ghost" onclick='editModel(${JSON.stringify(x).replace(/'/g,'&#39;')})' title="编辑">✏️</button>
+        ${x.complete?'':`<button class="sm ghost" onclick="quickDownload('${x.id}')" title="下载这个模型">⬇</button>`}
+        ${x.present?`<button class="sm ghost" onclick="delModelFile('${x.id}')" title="仅删除模型文件">🗑</button>`:''}
+        ${x.required?'':`<button class="sm ghost" onclick="removeModel('${x.id}')" title="从配置移除">✖</button>`}
+      </td>
+    </tr>`).join('')}</tbody></table>
+    <div class="hint">
+      必需模型不能禁用/删除（引擎依赖）。id 不可改，其它字段都能改。
+      修改后写回 <code>models.yaml</code>，自动备份旧版本。
+    </div>
+  </div>`;
+}
+
+// ---------- 模型下载 ----------
+let DL_SOURCES = [];
+
+async function ensureSources(){
+  if(DL_SOURCES.length) return DL_SOURCES;
+  try{
+    const r = await api('/api/admin/models/sources');
+    DL_SOURCES = r.sources||[];
+  }catch(e){ DL_SOURCES=[]; }
+  return DL_SOURCES;
+}
+
+window.openDownloadDialog = async function(prefill){
+  const srcs = await ensureSources();
+  const p = prefill || {};
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+
+  const mask = document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML = `<div class="modal" style="width:min(680px,100%)">
+    <h3>下载模型</h3>
+    <div class="hint" style="margin-bottom:12px">
+      从 ModelScope / HuggingFace / 镜像站 / 直链下载到 models 目录。
+      下载在后台跑，可关闭窗口，稍后回来检查文件状态。
+    </div>
+
+    <div class="row"><div><label>下载源</label>
+      <select id="dl_src" onchange="onSrcChange()">
+        <option value="modelscope">ModelScope（魔搭，国内快）</option>
+        <option value="huggingface">Hugging Face（需能连）</option>
+        <option value="hf-mirror">Hugging Face 镜像站</option>
+        <option value="url">自定义 http/https 直链</option>
+      </select></div>
+    </div>
+
+    <div id="dl_repo_box">
+      <div class="row"><div><label>仓库 repo（如 Comfy-Org/MiniMax-H3）</label>
+        <input id="dl_repo" value="${esc(p.repo||'')}"></div></div>
+      <div class="row"><div><label>仓库内文件路径 file</label>
+        <input id="dl_file" value="${esc(p.file||'')}"
+          placeholder="diffusion_models/xxx.safetensors"></div></div>
+    </div>
+
+    <div class="row" id="dl_url_box" style="display:none">
+      <div><label>直链 URL</label>
+        <input id="dl_url" placeholder="https://.../model.safetensors"></div>
+    </div>
+
+    <div class="row"><div><label>落地路径（相对 models 目录，留空=同 file）</label>
+      <input id="dl_target" value="${esc(p.target||'')}"
+        placeholder="diffusion_models/xxx.safetensors"></div></div>
+
+    <div class="row"><div><label>绑定到哪个模型 id（可选，下完自动启用）</label>
+      <input id="dl_mid" value="${esc(p.model_id||'')}" placeholder="h3-ref2va-int8"></div></div>
+
+    <div class="flex" style="margin-top:14px">
+      <button onclick="doDownload()">开始下载</button>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+    <div id="dl_out" style="margin-top:12px"></div>
+  </div>`;
+  document.body.append(mask);
+};
+
+window.onSrcChange = function(){
+  const v = document.getElementById('dl_src').value;
+  document.getElementById('dl_repo_box').style.display = v==='url' ? 'none' : '';
+  document.getElementById('dl_url_box').style.display = v==='url' ? '' : 'none';
+};
+
+window.quickDownload = async function(modelId){
+  const d = await api('/api/admin/models');
+  const m = (d.models||[]).find(x=>x.id===modelId);
+  if(!m) return toast('模型不存在','err');
+  // 常见仓库约定：Comfy-Org 系列
+  let repo = 'Comfy-Org/MiniMax-H3';
+  if(m.engine==='wan22') repo = 'Comfy-Org/Wan_2.2_ComfyUI_Repackaged';
+  openDownloadDialog({repo, file: m.file, target: m.file, model_id: m.id});
+};
+
+window.doDownload = async function(){
+  const src = document.getElementById('dl_src').value;
+  const body = {
+    source: src,
+    repo: (document.getElementById('dl_repo')||{}).value || '',
+    file: (document.getElementById('dl_file')||{}).value || '',
+    url: (document.getElementById('dl_url')||{}).value || '',
+    target: (document.getElementById('dl_target')||{}).value || '',
+    model_id: (document.getElementById('dl_mid')||{}).value || '',
+  };
+  const out = document.getElementById('dl_out');
+  out.innerHTML = '<span class="muted">提交中…</span>';
+  try{
+    const r = await api('/api/admin/models/download',{method:'POST',
+      body:JSON.stringify(body)});
+    out.innerHTML = `<div class="hint">已开始<br>
+      <span class="mono" style="font-size:11px">${esc(r.url)}</span><br>
+      → <span class="mono">${esc(r.target)}</span></div>
+      <div class="log" style="max-height:140px;margin-top:8px" id="dl_log">下载中…</div>`;
+    watchDownload(r.task_id);
+  }catch(e){
+    out.innerHTML = `<div class="pill bad">${esc(e.message)}</div>`;
+  }
+};
+
+async function watchDownload(tid){
+  const box = () => document.getElementById('dl_log');
+  for(let i=0;i<720;i++){
+    await new Promise(r=>setTimeout(r,5000));
+    let t;
+    try{ t = await api('/api/tasks/'+tid) }catch(e){ return }
+    const b = box();
+    if(b){
+      const ev=(t.progress||[]).slice(-1)[0]||{};
+      b.textContent = `${t.status}  ${ev.phase||''}  ${ev.status||''}`;
+    }
+    if(t.status!=='running'){
+      const res=t.result||{};
+      toast(t.status==='done'
+        ? `下载完成：${res.target||''} ${res.size_gb||''}GB`
+        : `下载失败：${(t.error||'').slice(0,80)}`,
+        t.status==='done'?'ok':'err');
+      render();
+      return;
+    }
+  }
+}
+
+// ---------- 模型编辑 ----------
+window.editModel = function(x){
+  if(typeof x === 'string') x = JSON.parse(x);
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.innerHTML = `
+    <div class="modal">
+      <h3>编辑模型</h3>
+      <div class="hint" style="margin-bottom:12px">
+        id <code>${esc(x.id)}</code> 不可改（其它配置靠它引用）
+      </div>
+      <div class="row"><div><label>显示名称 name</label>
+        <input id="m_name" value="${esc(x.name||'')}"></div></div>
+      <div class="row">
+        <div><label>引擎 engine</label>
+          <select id="m_engine">
+            ${['h3','wan22'].map(e=>`<option value="${e}" ${x.engine===e?'selected':''}>${e}</option>`).join('')}
+          </select></div>
+        <div><label>类型 kind</label>
+          <select id="m_kind">
+            ${['diffusion','text_encoder','vae','lora'].map(k=>
+              `<option value="${k}" ${x.kind===k?'selected':''}>${k}</option>`).join('')}
+          </select></div>
+      </div>
+      <div class="row"><div><label>文件路径 file（相对 models 目录）</label>
+        <input id="m_file" value="${esc(x.file||'')}"
+          placeholder="diffusion_models/xxx.safetensors"></div></div>
+      <div class="row">
+        <div><label>期望大小 GB</label>
+          <input id="m_size" type="number" step="0.01" value="${x.size_gb??0}"></div>
+        <div><label>必需 required</label>
+          <label class="switch"><input type="checkbox" id="m_req" ${x.required?'checked':''}>
+          <span class="slider"></span></label></div>
+        <div><label>启用 enabled</label>
+          <label class="switch"><input type="checkbox" id="m_en" ${x.enabled?'checked':''}>
+          <span class="slider"></span></label></div>
+      </div>
+      <div class="row"><div><label>备注 note</label>
+        <input id="m_note" value="${esc(x.note||'')}"></div></div>
+      <div class="flex" style="margin-top:16px">
+        <button onclick="saveModel('${x.id}')">保存</button>
+        <button class="ghost" onclick="this.closest('.modal-mask').remove()">取消</button>
+      </div>
+    </div>`;
+  document.body.append(mask);
+};
+
+window.saveModel = async function(mid){
+  const patch = {
+    name: $('#m_name').value.trim(),
+    engine: $('#m_engine').value,
+    kind: $('#m_kind').value,
+    file: $('#m_file').value.trim(),
+    size_gb: +$('#m_size').value || 0,
+    required: $('#m_req').checked,
+    enabled: $('#m_en').checked,
+    note: $('#m_note').value.trim(),
+  };
+  try{
+    const r = await api('/api/admin/models/update',{method:'POST',
+      body:JSON.stringify({model_id:mid,patch})});
+    document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+    const m = r.model||{};
+    toast(m.complete?'已保存（文件校验通过）':
+          m.present?'已保存（文件大小不符）':'已保存（文件缺失）',
+          m.complete?'ok':'err');
+    render();
+  }catch(e){ toast('保存失败: '+e.message,'err') }
+};
+
+window.removeModel = async function(mid){
+  if(!confirm(`从配置移除模型 ${mid}？\n\n磁盘上的权重文件不会被删除。`))return;
+  try{
+    await api('/api/admin/models/'+encodeURIComponent(mid),{method:'DELETE'});
+    toast('已移除','ok'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.delModelFile = async function(mid){
+  const d = await api('/api/admin/models');
+  const x = d.models.find(m=>m.id===mid);
+  if(!x) return;
+  if(!confirm(`删除磁盘文件？\n${x.file}\n\n只能重下（ModelScope 约几分钟）。`))return;
+  try{
+    await api('/api/admin/files?scope=models&path='+encodeURIComponent(x.file),{method:'DELETE'});
+    toast('文件已删除','ok'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+window.toggleModel=async function(id,en){
+  try{ await api('/api/admin/models/toggle',{method:'POST',
+    body:JSON.stringify({model_id:id,enabled:en})});
+    toast('已'+(en?'启用':'禁用'),'ok'); render();
+  }catch(e){toast(e.message,'err');render()}
+};
+window.checkModels=async function(){
+  try{ const r=await api('/api/admin/models/check',{method:'POST'});
+    toast(`缺失 ${r.missing.length}，不完整 ${r.incomplete.length}`,
+      (r.missing.length||r.incomplete.length)?'err':'ok'); render();
+  }catch(e){toast(e.message,'err')}
+};
+window.addModel=async function(){
+  const id=prompt('模型 id（如 h3-lora-x）:'); if(!id)return;
+  const name=prompt('显示名:'); if(!name)return;
+  const engine=prompt('引擎（h3 / wan22）:','h3'); if(!engine)return;
+  const kind=prompt('类型（diffusion/text_encoder/vae/lora）:','lora'); if(!kind)return;
+  const file=prompt('文件相对路径（如 loras/xxx.safetensors）:'); if(!file)return;
+  try{ await api('/api/admin/models/add',{method:'POST',body:JSON.stringify({
+    id,name,engine,kind,file,size_gb:0,required:false,enabled:true})});
+    toast('已添加','ok'); render();
+  }catch(e){toast(e.message,'err')}
+};
+
+// ---------- 提示词 ----------
+async function renderPrompts(m){
+  const d = await api('/api/admin/prompts');
+  const ps = d.prompts||{};
+  m.innerHTML = `
+  <div class="card"><h2>LLM 与提示词 <span class="tag">prompts.yaml</span></h2>
+    <div class="tabs" id="ptab">
+      <div class="tab active" onclick="pickPrompt('__llm',this)">🔗 LLM 配置</div>
+      ${Object.keys(ps).map(k=>`<div class="tab" onclick="pickPrompt('${k}',this)">${esc(PROMPT_ZH[k]||k)}</div>`).join('')}
+    </div>
+    <div id="pform"></div>
+  </div>`;
+  window._prompts=d; window._pcur='__llm'; drawPrompt('__llm');
+}
+
+// 提示词模板中文名
+const PROMPT_ZH = {
+  outline:'剧情大纲', storyboard:'分镜头脚本', baseinfo:'基础信息抽取',
+  enhance:'提示词润色', continuation:'镜头接续', translate:'中英翻译',
+};
+
+window.pickPrompt=function(k,el){
+  document.querySelectorAll('#ptab .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); window._pcur=k; drawPrompt(k);
+};
+
+function drawPrompt(k){
+  const d=window._prompts; const f=$('#pform');
+  if(k==='__llm'){ drawLLMConf(f, d.llm||{}); return; }
+  const p=(d.prompts||{})[k]||{};
+  f.innerHTML = `
+    <div class="row"><div><label>system（系统提示词）</label>
+      <textarea id="p_sys" rows="14">${esc(p.system||'')}</textarea></div></div>
+    <div class="row"><div><label>user（用户模板，支持 {var} 占位符）</label>
+      <textarea id="p_usr" rows="10">${esc(p.user||'')}</textarea></div></div>
+    <div class="flex"><button onclick="savePrompt('${k}')">保存「${esc(PROMPT_ZH[k]||k)}」</button></div>
+    <div class="hint">占位符必须与代码传入的一致，否则会报「缺少占位符变量」。</div>`;
+}
+
+/** LLM 配置面板：API KEY + 模型获取 + 模型选择 + 参数 + 连通测试 */
+function drawLLMConf(f, c, keepMsg){
+  const models = window._llmModels || [];
+  const opts = (cur) => models.length
+    ? models.map(x=>`<option value="${esc(x.id)}" ${cur===x.id?'selected':''}>${esc(x.id)}${x.context_length?` (${Math.round(x.context_length/1024)}K)`:''}</option>`).join('')
+    : `<option value="${esc(cur||'')}">${esc(cur||'（先获取模型列表）')}</option>`;
+
+  f.innerHTML = `
+  <div class="hint" style="margin-bottom:12px">
+    配置 OpenAI 兼容的 LLM 服务。分镜/大纲/翻译都用这里。
+  </div>
+
+  <div class="row">
+    <div style="flex:2"><label>接口地址 base_url</label>
+      <input id="llm_url" value="${esc(c.base_url||'')}" placeholder="https://api.icompify.com/v1"></div>
+  </div>
+
+  <div class="row">
+    <div style="flex:2"><label>API KEY</label>
+      <input id="llm_key" type="password" placeholder="${window._llmKeyMasked?'当前：'+window._llmKeyMasked+'（留空则不修改）':'尚未配置'}"></div>
+    <div class="fixed" style="align-self:flex-end">
+      <button class="ghost" onclick="saveLLMKey()">保存 KEY</button></div>
+  </div>
+
+  <div class="flex" style="margin:10px 0 16px">
+    <button onclick="fetchLLMModels()">🔄 获取模型列表</button>
+    <button class="ghost" onclick="testLLMConn()">🧪 测试连通</button>
+    <span id="llmMsg" class="hint">${keepMsg?esc(keepMsg):''}</span>
+  </div>
+
+  <div class="row">
+    <div><label>主模型 default_model</label>
+      <select id="llm_def">${opts(c.default_model)}</select></div>
+    <div><label>降级模型 fallback_model</label>
+      <select id="llm_fb">${opts(c.fallback_model)}</select></div>
+  </div>
+
+  <div class="row">
+    <div><label>温度 temperature（0-2）</label>
+      <input id="llm_temp" type="number" step="0.1" min="0" max="2" value="${c.temperature??0.6}"></div>
+    <div><label>最大输出 max_tokens</label>
+      <input id="llm_maxtok" type="number" value="${c.max_tokens??65536}"></div>
+    <div><label>上下文窗口 context_length</label>
+      <input id="llm_ctx" type="number" value="${c.context_length??262144}"></div>
+    <div><label>超时 timeout_sec</label>
+      <input id="llm_to" type="number" value="${c.timeout_sec??600}"></div>
+  </div>
+
+  <div class="flex" style="margin-top:12px">
+    <button onclick="saveLLM()">保存 LLM 配置</button>
+    <span class="hint">max_tokens 默认 64K（65536）；context_length 默认 256K（262144）</span>
+  </div>`;
+
+  // 取一下当前 key 的掩码
+  api('/api/admin/secrets').then(d=>{
+    const k=(d.secrets||{}).ICOMPIFY_API_KEY||'';
+    window._llmKeyMasked=k;
+    const el=document.getElementById('llm_key');
+    if(el) el.placeholder = k ? `当前：${k}（留空则不修改）` : '尚未配置';
+  }).catch(()=>{});
+}
+
+window.saveLLMKey = async function(){
+  const v = (document.getElementById('llm_key').value||'').trim();
+  if(!v) return toast('请输入 KEY','err');
+  try{
+    const r = await api('/api/admin/secrets',{method:'PUT',
+      body:JSON.stringify({key:'ICOMPIFY_API_KEY', value:v})});
+    document.getElementById('llm_key').value='';
+    toast('KEY 已保存：'+r.masked,'ok');
+    drawLLMConf(document.getElementById('pform'), window._prompts.llm||{}, 'KEY 已保存');
+  }catch(e){ toast(e.message,'err') }
+};
+
+window.fetchLLMModels = async function(){
+  const url=(document.getElementById('llm_url').value||'').trim();
+  const msg=document.getElementById('llmMsg');
+  msg.textContent='获取中…';
+  try{
+    const r = await api('/api/admin/llm/models?base_url='+encodeURIComponent(url));
+    window._llmModels = r.models||[];
+    // 重绘会清空 #llmMsg，所以把消息作为参数带过去
+    drawLLMConf(document.getElementById('pform'), window._prompts.llm||{},
+                `✓ 取到 ${r.count} 个模型（${r.latency_ms}ms）`);
+  }catch(e){
+    msg.innerHTML=`<span style="color:var(--err)">✗ ${esc(e.message)}</span>`;
+  }
+};
+
+window.testLLMConn = async function(){
+  const msg=document.getElementById('llmMsg');
+  msg.textContent='测试中…';
+  try{
+    const r = await api('/api/admin/llm/test');
+    msg.innerHTML = r.ok
+      ? `<span style="color:var(--ok)">✓ 连通 ${r.latency_ms}ms · ${esc(r.model)}</span>`
+      : `<span style="color:var(--err)">✗ ${esc(r.error||'失败')}</span>`;
+  }catch(e){ msg.innerHTML=`<span style="color:var(--err)">✗ ${esc(e.message)}</span>`; }
+};
+
+window.saveLLM=async function(){
+  const c = {
+    base_url: document.getElementById('llm_url').value.trim(),
+    default_model: document.getElementById('llm_def').value,
+    fallback_model: document.getElementById('llm_fb').value,
+    temperature: parseFloat(document.getElementById('llm_temp').value)||0.6,
+    max_tokens: parseInt(document.getElementById('llm_maxtok').value,10)||65536,
+    context_length: parseInt(document.getElementById('llm_ctx').value,10)||262144,
+    timeout_sec: parseInt(document.getElementById('llm_to').value,10)||600,
+  };
+  window._prompts.llm = c;
+  await savePrompts();
+};
+window.savePrompt=async function(k){
+  window._prompts.prompts[k]={system:$('#p_sys').value,user:$('#p_usr').value};
+  await savePrompts();
+};
+async function savePrompts(){
+  try{ const r=await api('/api/admin/prompts',{method:'PUT',body:JSON.stringify(window._prompts)});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok');
+  }catch(e){toast('保存失败: '+e.message,'err')}
+}
+
+// ---------- 风格与平台预设 ----------
+async function renderPresets(m){
+  const d = await api('/api/admin/config/presets');
+  const styles = d.data.styles || [];
+  const plats = d.data.platforms || [];
+  const mon = d.data.monitor || {};
+
+  m.innerHTML = `
+  <div class="card"><h2>风格预设 <span class="tag">${styles.length} 个</span></h2>
+    <div class="hint" style="margin-bottom:12px">
+      前台「输入故事」页的下拉框读这里。改完点保存，前台刷新即见。
+      提示词为中文渲染段，锁定时会整体写入「视觉风格」。
+    </div>
+    <table><thead><tr><th>中文名</th><th>提示词（进渲染）</th><th>id</th><th></th></tr></thead>
+    <tbody>${styles.map((s2,i)=>`<tr>
+      <td><input value="${esc(s2.zh||'')}" data-i="${i}" data-k="zh" class="st-in"
+        style="width:110px"></td>
+      <td><input value="${esc(s2.render||s2.en||'')}" data-i="${i}" data-k="render" class="st-in"
+        style="width:100%;font-size:12px"></td>
+      <td class="mono muted">${esc(s2.id||'')}</td>
+      <td><button class="sm ghost" onclick="delStyle(${i})">✕</button></td>
+    </tr>`).join('')}</tbody></table>
+    <div class="flex" style="margin-top:10px">
+      <button class="sm ghost" onclick="addStyle()">+ 加一条</button>
+      <button onclick="saveStyles()">保存风格</button>
+    </div>
+  </div>
+
+  <div class="card"><h2>平台规格预设 <span class="tag">${plats.length} 个</span></h2>
+    <div class="hint" style="margin-bottom:12px">
+      应用后写入 settings.assemble 的画幅/帧率。改完需重新成片才生效。
+    </div>
+    <table><thead><tr><th>平台</th><th>画幅</th><th>宽×高</th><th>帧率</th><th>时长上限</th><th></th></tr></thead>
+    <tbody>${plats.map(p2=>`<tr>
+      <td><b>${esc(p2.zh||'')}</b><div class="muted mono" style="font-size:10px">${esc(p2.id||'')}</div></td>
+      <td class="mono">${esc(p2.aspect||'')}</td>
+      <td class="mono">${p2.width}×${p2.height}</td>
+      <td class="mono">${p2.fps}</td>
+      <td class="mono">${p2.max_duration}s</td>
+      <td><button class="sm ghost" onclick="applyPlatform('${p2.id}')">应用</button></td>
+    </tr>`).join('')}</tbody></table>
+    <div class="muted" style="font-size:11px;margin-top:8px" id="curAsm">当前成片规格：读取中…</div>
+  </div>
+
+  <div class="card"><h2>字幕样式 <span class="tag">成片时烧录</span></h2>
+    <div class="hint" style="margin-bottom:12px">改完保存，下次成片生效。</div>
+    <div id="subStyleBox">读取中…</div>
+  </div>
+
+  <div class="card"><h2>监控栏默认值</h2>
+    <div class="hint" style="margin-bottom:10px">
+      前台顶部监控栏的默认显示项（用户可在前台自行覆盖，存本机）。
+    </div>
+    <div class="row"><div><label>默认刷新间隔（秒）</label>
+      <input id="monRef" type="number" value="${mon.refresh_sec||15}"></div></div>
+    <div class="flex"><button onclick="saveMonitorDef()">保存</button></div>
+    <div class="hint" style="margin-top:8px">
+      可选项共 ${(mon.items||[]).length} 个：${(mon.items||[]).map(x=>x.zh).join('、')}
+    </div>
+  </div>`;
+
+  // 异步补上当前成片规格
+  api('/api/admin/config/settings').then(c=>{
+    const a=(c.data||{}).assemble||{};
+    const el=document.getElementById('curAsm');
+    if(el) el.textContent=`当前成片规格：${a.width}×${a.height} @${a.fps}fps`;
+  }).catch(()=>{});
+
+  // 字幕样式面板
+  renderSubtitleStyle();
+}
+
+/** 字幕样式编辑：位置/大小/字体/颜色。 */
+async function renderSubtitleStyle(){
+  const box = document.getElementById('subStyleBox');
+  if(!box) return;
+  let sub = {};
+  try{
+    const c = await api('/api/admin/config/settings');
+    sub = ((c.data||{}).assemble||{}).subtitle || {};
+  }catch(e){}
+  const fs = sub.font_size||18, mv = sub.margin_v||60,
+        al = sub.alignment||2, fn = sub.font_name||'Noto Sans CJK SC',
+        ol = sub.outline||2, sh = sub.shadow||0,
+        pc = sub.primary_colour||'&H00FFFFFF',
+        oc = sub.outline_colour||'&H00000000';
+  box.innerHTML = `
+  <div class="grid3">
+    <div><label>字号</label><input id="subFs" type="number" value="${fs}" min="8" max="72"></div>
+    <div><label>垂直边距(px)</label><input id="subMv" type="number" value="${mv}" min="0" max="800"></div>
+    <div><label>对齐(2底/5中/8顶)</label><input id="subAl" type="number" value="${al}" min="1" max="9"></div>
+  </div>
+  <div class="grid3" style="margin-top:8px">
+    <div><label>字体</label><input id="subFn" value="${fn}"></div>
+    <div><label>描边宽度</label><input id="subOl" type="number" value="${ol}" min="0" max="8"></div>
+    <div><label>阴影</label><input id="subSh" type="number" value="${sh}" min="0" max="8"></div>
+  </div>
+  <div class="flex" style="margin-top:12px">
+    <button onclick="saveSubStyle()">保存字幕样式</button>
+  </div>`;
+}
+
+window.saveSubStyle = async function(){
+  const g = id => document.getElementById(id).value;
+  const style = {
+    font_size: +g('subFs'), margin_v: +g('subMv'), alignment: +g('subAl'),
+    font_name: g('subFn'), outline: +g('subOl'), shadow: +g('subSh'),
+  };
+  // 读取当前 settings，改 assemble.subtitle 后写回
+  const c = await api('/api/admin/config/settings');
+  const data = c.data || {};
+  data.assemble = data.assemble || {};
+  data.assemble.subtitle = style;
+  try{
+    await api('/api/admin/config',{method:'PUT',
+      body:JSON.stringify({section:'settings',data})});
+    toast('字幕样式已保存','ok');
+  }catch(e){ toast(e.message,'err') }
+};
+window.delStyle=async function(i){
+  const d = await api('/api/admin/config/presets');
+  const data = d.data;
+  data.styles.splice(i,1);
+  await api('/api/admin/config',{method:'PUT',
+    body:JSON.stringify({section:'presets',data})});
+  toast('已删除','ok'); render();
+};
+window.saveStyles=async function(){
+  const d = await api('/api/admin/config/presets');
+  const data = d.data;
+  document.querySelectorAll('.st-in').forEach(el=>{
+    const i=+el.dataset.i, k=el.dataset.k;
+    if(data.styles[i]) data.styles[i][k]=el.value;
+  });
+  // 同步 id（新增的没 id）
+  data.styles.forEach((x,i)=>{ if(!x.id) x.id='style-'+(i+1); });
+  try{
+    const r=await api('/api/admin/config',{method:'PUT',
+      body:JSON.stringify({section:'presets',data})});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok'); render();
+  }catch(e){ toast(e.message,'err') }
+};
+window.addStyle=async function(){
+  const d = await api('/api/admin/config/presets');
+  const data = d.data;
+  data.styles.push({id:'style-'+(data.styles.length+1), zh:'新风格', render:'', en:''});
+  await api('/api/admin/config',{method:'PUT',
+    body:JSON.stringify({section:'presets',data})});
+  render();
+};
+window.applyPlatform=async function(pid){
+  try{
+    const r=await api('/api/presets/platform',{method:'POST',
+      body:JSON.stringify({platform_id:pid})});
+    toast(`${r.applied.zh} 已应用：${r.assemble.width}×${r.assemble.height} @${r.assemble.fps}fps`,'ok');
+    render();
+  }catch(e){ toast(e.message,'err') }
+};
+window.saveMonitorDef=async function(){
+  try{
+    await api('/api/presets/monitor',{method:'PUT',
+      body:JSON.stringify({refresh_sec:+document.getElementById('monRef').value||15})});
+    toast('已保存','ok');
+  }catch(e){ toast(e.message,'err') }
+};
+
+// ---------- 通用 YAML 块（路由/引擎） ----------
+async function renderYamlSection(m,section,title,icon){
+  const d = await api(`/api/admin/config/${section}`);
+  m.innerHTML = `
+  <div class="card"><h2>${icon} ${title} <span class="tag">${section}.yaml</span></h2>
+    <div class="hint" style="margin-bottom:10px">
+      直接编辑 YAML。保存后立即重载，写错会报行号。
+    </div>
+    <textarea id="yamlbox" rows="30" style="font-size:12.5px">${esc(toYaml(d.data))}</textarea>
+    <div class="flex" style="margin-top:10px">
+      <button onclick="saveYaml('${section}')">保存并重载</button>
+      <button class="ghost" onclick="render()">放弃</button>
+    </div>
+  </div>`;
+}
+function toYaml(obj,ind=0){
+  return JSON.stringify(obj,null,2);   // 用 JSON 展示，保存时后端按 JSON→YAML 写
+}
+window.saveYaml=async function(section){
+  let data;
+  try{ data=JSON.parse($('#yamlbox').value) }
+  catch(e){ return toast('JSON 格式错误: '+e.message,'err') }
+  try{ const r=await api('/api/admin/config',{method:'PUT',
+    body:JSON.stringify({section,data})});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok');
+  }catch(e){toast('保存失败: '+e.message,'err')}
+};
+
+// ---------- API KEY ----------
+async function renderSecrets(m){
+  const d = await api('/api/admin/secrets');
+  // ADMIN_PASSWORD 已迁到「设置项 → 后台安全」，这里不再展示
+  const rows = Object.entries(d.secrets).filter(([k]) => k !== 'ADMIN_PASSWORD');
+  m.innerHTML = `
+  <div class="card"><h2>API KEY <span class="tag">secrets.env · 权限 600</span></h2>
+    <table><thead><tr><th>名称</th><th>当前值</th><th></th></tr></thead>
+    <tbody>${rows.length?rows.map(([k,v])=>`<tr>
+      <td class="mono">${esc(k)}</td>
+      <td class="mono">${v?esc(v):'<span class="pill bad">未设置</span>'}</td>
+      <td><button class="sm ghost" onclick="editSecret('${k}')">修改</button></td>
+    </tr>`).join(''):'<tr><td colspan="3" class="muted">无</td></tr>'}</tbody></table>
+    <div class="row" style="margin-top:16px">
+      <div><label>新增/覆盖 KEY 名</label><input id="sk" placeholder="ICOMPIFY_API_KEY"></div>
+      <div><label>值</label><input id="sv" type="password" placeholder="sk-..."></div>
+      <div class="fixed" style="align-self:flex-end"><button onclick="saveSecret()">保存</button></div>
+    </div>
+    <div class="flex" style="margin-top:8px">
+      <button class="ghost" onclick="testLLM()">🧪 测试 LLM 连通性</button>
+    </div>
+    <div class="hint">
+      值写入后只显示掩码，实际内容在 <code>config/secrets.env</code>（权限 600），可线下编辑。<br>
+      后台密码不在这里，已移到「设置项 → 后台安全」。
+    </div>
+  </div>`;
+}
+window.editSecret=function(k){
+  $('#sk').value=k; $('#sv').value=''; $('#sv').focus();
+};
+window.saveSecret=async function(){
+  const k=$('#sk').value.trim(), v=$('#sv').value;
+  if(!k)return toast('KEY 名不能为空','err');
+  try{ const r=await api('/api/admin/secrets',{method:'PUT',
+    body:JSON.stringify({key:k,value:v})});
+    toast('已保存: '+r.masked,'ok'); $('#sv').value=''; render();
+  }catch(e){toast(e.message,'err')}
+};
+
+// ---------- 文件 ----------
+async function renderFiles(m){
+  m.innerHTML=`
+  <div class="card"><h2>文件管理 <span class="tag">预览 / 下载 / 删除</span></h2>
+    <div class="tabs" id="ftab">
+      ${['output','models','input','config','logs'].map((s,i)=>
+        `<div class="tab ${i===0?'active':''}" onclick="pickFiles('${s}',this)">${
+          {output:'产物',models:'模型',input:'输入',config:'配置',logs:'日志'}[s]}</div>`).join('')}
+    </div>
+    <div class="flex" style="margin-bottom:10px">
+      <input id="fSearch" placeholder="按路径过滤…" style="max-width:320px" oninput="filterFiles()">
+      <select id="fKind" onchange="filterFiles()" style="max-width:150px">
+        <option value="">全部类型</option>
+        <option value="video">视频</option>
+        <option value="image">图片</option>
+        <option value="audio">音频</option>
+        <option value="text">文本</option>
+        <option value="binary">其它</option>
+      </select>
+      <span class="muted" id="fStat" style="font-size:12px"></span>
+    </div>
+    <div id="flist" class="muted">选择上面的标签</div>
+  </div>`;
+  pickFiles('output',document.querySelector('#ftab .tab'));
+}
+
+let FILES_CACHE={scope:'output',items:[]};
+
+window.pickFiles=async function(scope,el){
+  document.querySelectorAll('#ftab .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const box=$('#flist'); box.innerHTML='加载中…';
+  try{
+    const d=await api('/api/admin/files?scope='+scope);
+    FILES_CACHE={scope, items:d.items||[], root:d.root, total:d.total_bytes};
+    $('#fStat').textContent=`${d.root} · ${d.count} 个文件 · 共 ${bytes(d.total_bytes)}`;
+    filterFiles();
+  }catch(e){ box.innerHTML=`<div class="log">${esc(e.message)}</div>` }
+};
+
+window.filterFiles=function(){
+  const box=$('#flist'); if(!box) return;
+  const q=(($('#fSearch')||{}).value||'').toLowerCase();
+  const kind=(($('#fKind')||{}).value||'');
+  const scope=FILES_CACHE.scope;
+  let items=(FILES_CACHE.items||[]);
+  if(q) items=items.filter(f=>(f.path||'').toLowerCase().includes(q));
+  if(kind) items=items.filter(f=>f.kind===kind);
+  if(!items.length){ box.innerHTML='<div class="muted">没有匹配的文件</div>'; return }
+  const show=items.slice(0,600);
+  box.innerHTML=`
+    <div class="hint" style="margin-bottom:8px">
+      点击「预览」直接看视频/图片/文本；「下载」保存到本地。共 ${items.length} 个匹配${items.length>600?'（只显示前 600）':''}。
+    </div>
+    <table><thead><tr><th>路径</th><th>类型</th><th>大小</th><th>修改</th><th>操作</th></tr></thead>
+    <tbody>${show.map(f=>`<tr>
+      <td class="mono" style="font-size:11.5px;word-break:break-all">${esc(f.path)}</td>
+      <td><span class="pill ${f.kind==='video'?'done':f.kind==='image'?'h3':f.kind==='text'?'dim':'warn'}">${f.kind}</span></td>
+      <td class="mono">${bytes(f.size)}</td>
+      <td class="muted" style="font-size:12px">${ago(f.mtime)}</td>
+      <td style="white-space:nowrap">
+        <button class="sm ghost" onclick="previewFile('${scope}','${esc(f.path).replace(/'/g,"\\'")}')">预览</button>
+        <a class="sm" style="padding:4px 10px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--text);font-size:12px"
+          href="/api/admin/file?scope=${scope}&download=true&path=${encodeURIComponent(f.path)}">下载</a>
+        ${scope!=='config'?`<button class="sm ghost" onclick="delFile('${scope}','${esc(f.path).replace(/'/g,"\\'")}')">🗑</button>`:''}
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+};
+
+window.previewFile=async function(scope,path){
+  document.querySelectorAll('.modal-mask').forEach(n=>n.remove());
+  const url=`/api/admin/file?scope=${scope}&path=${encodeURIComponent(path)}`;
+  let meta=null;
+  try{ meta=await api(`/api/admin/file/meta?scope=${scope}&path=${encodeURIComponent(path)}`) }catch(e){}
+  const kind=meta?meta.kind:'binary';
+  const dl=`/api/admin/file?scope=${scope}&download=true&path=${encodeURIComponent(path)}`;
+  let body='';
+  if(kind==='video'){
+    body=`<div style="background:#000;border-radius:6px;overflow:hidden">
+      <video src="${url}" controls autoplay style="max-width:100%;max-height:65vh;display:block;margin:0 auto"></video></div>`;
+  }else if(kind==='image'){
+    body=`<div style="background:#000;border-radius:6px;text-align:center">
+      <img src="${url}" style="max-width:100%;max-height:65vh"></div>`;
+  }else if(kind==='audio'){
+    body=`<audio src="${url}" controls style="width:100%"></audio>`;
+  }else if(kind==='text'){
+    try{
+      const d=await fetch(url).then(r=>r.json());
+      body=`<div class="log" style="max-height:60vh">${esc(d.content||'')}</div>
+        ${d.truncated?'<div class="hint">文件较大，仅显示前 400KB，下载看全文。</div>':''}`;
+    }catch(e){ body=`<div class="log">读取失败：${esc(e.message)}</div>` }
+  }else{
+    body=`<div class="muted">该类型不支持在线预览，请下载后用本地工具打开。</div>`;
+  }
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal" style="width:min(900px,100%)">
+    <h3 style="word-break:break-all">${esc(path.split('/').pop())}</h3>
+    <div class="hint" style="margin-bottom:10px">
+      ${esc(scope)} · ${meta?bytes(meta.size):''} ${meta?'· '+ago(meta.mtime):''}
+    </div>
+    ${body}
+    <div class="flex" style="margin-top:14px">
+      <a class="sm" style="padding:8px 16px;border-radius:6px;background:var(--accent);color:#fff;text-decoration:none"
+        href="${dl}">⬇ 下载</a>
+      <button class="ghost" onclick="this.closest('.modal-mask').remove()">关闭</button>
+    </div>
+  </div>`;
+  document.body.append(mask);
+};
+
+window.delFile=async function(scope,path){
+  if(!confirm('确认删除？不可恢复。\n'+path))return;
+  try{ await api(`/api/admin/files?scope=${scope}&path=${encodeURIComponent(path)}`,{method:'DELETE'});
+    toast('已删除','ok'); pickFiles(scope,document.querySelector('#ftab .tab.active'));
+  }catch(e){toast(e.message,'err')}
+};
+
+// ---------- 配置文件原文 ----------
+async function renderConfigFiles(m){
+  const d = await api('/api/admin/config');
+  m.innerHTML = `
+  <div class="card"><h2>配置文件原文 <span class="tag">${esc(files_root_hint())}</span></h2>
+    <div class="tabs" id="ctab">
+      ${d.files.map((f,i)=>`<div class="tab ${i===0?'active':''}" onclick="pickCfg('${esc(f.name)}',this)">${esc(f.name)}</div>`).join('')}
+    </div>
+    <div id="cfbox"></div>
+    <div class="hint">这些文件也能直接在宿主机上用编辑器改，改完点「重载」即可。</div>
+    <div class="flex" style="margin-top:10px"><button class="ghost" onclick="reloadCfg()">↻ 重载</button></div>
+  </div>`;
+  pickCfg(d.files[0].name, document.querySelector('#ctab .tab'));
+}
+window.pickCfg=async function(name,el){
+  document.querySelectorAll('#ctab .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const box=$('#cfbox'); box.innerHTML='加载中…';
+  try{
+    const d=await api('/api/admin/config-file/'+encodeURIComponent(name));
+    box.innerHTML=`<textarea id="cfgtext" rows="26" style="font-size:12.5px">${esc(d.content)}</textarea>
+      <div class="flex" style="margin-top:10px">
+        <button onclick="saveCfgFile('${esc(name)}')">保存</button>
+      </div>`;
+  }catch(e){ box.innerHTML=`<div class="log">${esc(e.message)}</div>` }
+};
+window.saveCfgFile=async function(name){
+  try{ const r=await api('/api/admin/config-file/'+encodeURIComponent(name),
+    {method:'PUT',body:JSON.stringify({content:$('#cfgtext').value})});
+    toast('已保存'+(r.backup?`，备份 ${r.backup}`:''),'ok');
+  }catch(e){toast(e.message,'err')}
+};
+
+// ---------- 任务日志 ----------
+async function renderTasks(m){
+  const [jobs, tasks] = await Promise.all([api('/api/admin/jobs?limit=80'), api('/api/tasks')]);
+  m.innerHTML = `
+  <div class="card"><h2>最近任务 <span class="tag">内存态</span></h2>
+    <table><thead><tr><th>类型</th><th>状态</th><th>开始</th><th>进度</th></tr></thead>
+    <tbody>${(tasks.tasks||[]).slice(0,20).map(t=>{
+      const last=(t.progress||[]).slice(-1)[0]||{};
+      return `<tr>
+        <td>${esc(t.kind)}</td>
+        <td><span class="pill ${t.status}">${esc(t.status)}</span></td>
+        <td class="muted">${ago(t.started)}</td>
+        <td class="mono muted" style="font-size:11px">${esc(JSON.stringify(last).slice(0,120))}</td>
+      </tr>`}).join('')||'<tr><td colspan="4" class="muted">无</td></tr>'}</tbody></table>
+  </div>
+
+  <div class="card"><h2>渲染队列 <span class="tag">跨集串行</span>
+    <span class="flex" style="margin-left:auto;gap:6px">
+      <button class="sm ghost" onclick="qCtl('pause')">暂停</button>
+      <button class="sm ghost" onclick="qCtl('resume')">恢复</button>
+      <button class="sm ghost" onclick="qCtl('clear_finished')">清理已完成</button>
+    </span></h2>
+    <div id="qbox" class="muted">加载中…</div>
+  </div>
+
+  <div class="card"><h2>渲染历史 <span class="tag">job 表</span></h2>
+    <table><thead><tr><th>镜</th><th>引擎</th><th>状态</th><th>耗时</th><th>错误</th></tr></thead>
+    <tbody>${(jobs.jobs||[]).map(j=>{
+      const dur = j.started_at&&j.finished_at ? ((j.finished_at-j.started_at)/60).toFixed(1)+'分' : '-';
+      return `<tr>
+        <td class="mono">${j.shot_seq!=null?j.shot_seq:'-'}</td>
+        <td><span class="pill ${j.engine||''}">${esc(j.engine||'-')}</span></td>
+        <td><span class="pill ${j.status}">${esc(j.status)}</span></td>
+        <td class="mono">${dur}</td>
+        <td class="muted" style="font-size:11px">${esc((j.error||'').slice(0,80))}</td>
+      </tr>`}).join('')||'<tr><td colspan="5" class="muted">无</td></tr>'}</tbody></table>
+  </div>`;
+  renderQ();
+}
+
+async function renderQ(){
+  const box=$('#qbox'); if(!box) return;
+  try{
+    const d=await api('/api/queue?limit=50');
+    const c=d.consumer||{}, cnt=d.counts||{};
+    const items=d.items||[];
+    const QST={queued:'排队中',running:'渲染中',done:'已完成',failed:'失败',canceled:'已取消'};
+    box.innerHTML=`
+      <div class="hint" style="margin-bottom:8px">
+        消费者：<b>${c.consumer_alive?'运行中':'未运行'}</b>${c.paused?' · <span style="color:var(--warn)">已暂停</span>':''}
+        · 排队 ${cnt.queued||0} · 运行 ${cnt.running||0} · 完成 ${cnt.done||0} · 失败 ${cnt.failed||0}
+        · 单卡串行（同一时刻只跑一集）
+      </div>
+      ${items.length?`<table><thead><tr><th>集</th><th>项目/剧集</th><th>模式</th><th>镜头</th><th>状态</th><th>开始</th><th>产物</th></tr></thead>
+      <tbody>${items.map(it=>`<tr>
+        <td class="mono">E${it.seq||''}</td>
+        <td><div style="font-size:12.5px">${esc(it.project_title||'')}</div>
+            <div class="muted" style="font-size:11px">${esc(it.episode_title||'')}</div></td>
+        <td class="muted" style="font-size:11.5px">${esc(it.engine_mode||'auto')}</td>
+        <td class="mono" style="font-size:11.5px">${it.shots_done||0}/${it.shots_total||0}</td>
+        <td><span class="pill ${it.status}">${QST[it.status]||it.status}</span>
+            ${it.error?`<div class="muted" style="color:var(--err);font-size:10.5px">${esc(String(it.error).slice(0,60))}</div>`:''}</td>
+        <td class="muted" style="font-size:11.5px">${it.started_at?ago(it.started_at):'-'}</td>
+        <td class="mono muted" style="font-size:11px;word-break:break-all">${esc((it.output||'').split('/').slice(-2).join('/'))}</td>
+      </tr>`).join('')}</tbody></table>`:'<div class="muted">队列为空</div>'}`;
+  }catch(e){ box.innerHTML=`<div class="log">${esc(e.message)}</div>` }
+}
+
+window.qCtl=async function(action){
+  try{
+    const r=await api('/api/queue/control',{method:'POST',body:JSON.stringify({action})});
+    toast(action==='clear_finished'?`已清理 ${r.cleared||0} 项`:'已执行','ok');
+    renderQ();
+  }catch(e){ toast(e.message,'err') }
+};
+
+// ---------- boot ----------
+renderNav(); render(); refreshSys();
+setInterval(refreshSys, 15000);
+</script>
+</body>
+</html>

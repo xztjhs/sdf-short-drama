@@ -1,0 +1,101 @@
+# ============================================================
+# SDF 栈 · 引擎路由规则
+#
+# ⚠️ v0.5：**只保留 MiniMax H3**，Wan2.2 已下线（配置+权重都归档）。
+#    因此这里不再做「引擎选择」，只保留：
+#      - 分辨率档位（按质量档）
+#      - 单镜耗时基线（算 ETA）
+#      - 优先级（兼容旧字段，实际按 seq 串行）
+#
+# 历史教训（保留，避免以后接第二个引擎时重犯）：
+#   · 只有「必须和画面对齐的声音」才值得走音视频同生模型（对白/人物发声）
+#   · 环境音（风/雨/脚步）后期 ffmpeg 配，不该牺牲产能
+#   · 低光不靠换模型解决，靠提示词里写「明亮的实用光源」
+# ============================================================
+
+# 唯一引擎
+default_engine: h3
+
+# 允许的引擎白名单（v0.5）：不在名单里的引擎一律回退到第一个。
+# 旧分镜里残留 engine: wan22 时，router 会自动改成 h3，不会去加载归档权重。
+allowed_engines: [h3]
+
+# 兼容旧字段：分镜脚本里写的 engine 一律按 h3 执行（渲染层会强制纠正）
+respect_shot_engine: true
+
+# 渲染模式（v0.5 只剩一种；字段保留给前端做兼容）
+engine_modes:
+  h3:
+    zh: 全部 MiniMax H3（原生对白 + 音效）
+    default: true
+
+# 分辨率档位
+#   横屏时由 router 自动交换宽高（settings.assemble.orientation=landscape）
+#   短边 720 = 默认档，与成片画布一致，不做隐式放大
+resolutions:
+  h3:
+    quality: 768x1344      # 原生最高（短边 768）
+    normal: 720x1280       # 默认档 = 成片画布
+    draft: 544x960
+
+# 单镜耗时基线（分钟，A5000 实测 2026-10-21~22）
+cost:
+  h3:
+    768x1344: 15.4
+    720x1280: 13.0
+    544x960: 6.5
+
+# 路由规则：全部落 H3。保留 structure 便于以后扩展
+rules:
+  - id: force
+    name: 强制指定
+    when: forced_engine
+    engine: "{forced_engine}"
+    reason: 强制指定
+
+  - id: storyboard_engine
+    name: 分镜指定
+    when: shot_engine
+    engine: "{shot_engine}"
+    reason: 分镜脚本指定
+
+  - id: fallback
+    name: 兜底
+    when: always
+    engine: h3
+    reason: 唯一引擎 H3
+
+# 关键词表（保留，仅用于分镜自检/诊断提示）
+keywords:
+  action: '打|踢|跑|跳|冲|摔|撞|挥|砍|拳|刀|剑|枪|爆炸|追逐|飞|翻滚|格斗|战斗|action|fight|run|jump|explosion'
+  empty: '空镜|远景|全景|天空|街道|山|海|雨|雪|风|日|月|云|房间空|无人|establishing|landscape|skyline|empty|scenery'
+  lowlight: '夜景|夜晚|深夜|暗|黑暗中|月光|霓虹|night|midnight|dark|dimly lit|low light|neon'
+
+# 人物发声类音效（诊断用：提示这些镜头必须看到嘴部/侧脸）
+vocal_sfx:
+  - '笑'
+  - '哭'
+  - '喊'
+  - '叫'
+  - '吼'
+  - '喘'
+  - '呻吟'
+  - '尖叫'
+  - '叹'
+  - '呢喃'
+  - '低语'
+  - '争吵'
+  - '对话'
+  - '旁白'
+  - 'laug'
+  - 'cry'
+  - 'scream'
+  - 'shout'
+  - 'moan'
+  - 'whisper'
+
+quality_shot_sizes: ['特写', '近景']
+
+priority:
+  with_dialogue: 3
+  default: 6

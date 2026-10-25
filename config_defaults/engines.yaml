@@ -1,0 +1,73 @@
+# ============================================================
+# SDF 栈 · 引擎渲染参数
+#
+# 每个引擎的采样参数、帧数规则、LoRA 挂载
+# 管理界面「引擎参数」可直接编辑
+# ============================================================
+
+engines:
+
+  h3:
+    name: MiniMax H3
+    description: 全模态，一次出画面+原生立体声。对白/音效镜头首选
+    audio: true          # 有原生音轨
+
+    # 模型文件（对应 models.yaml 里的 id）
+    model_id: h3-fl2va-int8
+    ref_model_id: h3-ref2va-int8
+    clip_id: h3-clip
+    vae_video_id: h3-vae-video
+    vae_audio_id: h3-vae-audio
+    lora_id: h3-lora-turbo8
+
+    # CLIPLoader 的 type 值（ComfyUI 真实可选值是 minimax，不是 minimax_h3）
+    clip_type: minimax
+
+    # 帧数规则：必须对齐 17k+5（5/22/39/.../124/243/362）
+    frames:
+      grid: 17
+      offset: 5
+      min: 5
+      max: 362          # 训练范围上限，超过不稳定
+      fps: 24
+
+    # 采样
+    sampler: euler
+    scheduler: simple
+    steps: 8            # Turbo LoRA 配 8 步
+    steps_quality: 12   # 对白镜头质量优先时
+    cfg: null           # H3 用 BasicGuider，无 CFG
+
+    # 分辨率约束（对齐 32 的倍数）
+    align: 32
+
+  wan22:
+    name: Wan2.2 TI2V-5B
+    description: 快 4 倍，无音轨。空镜/动作首选。低光场景易欠曝
+    audio: false
+
+    model_id: wan22-ti2v-5b
+    clip_id: wan22-clip
+    vae_id: wan22-vae
+    clip_type: wan
+
+    # 帧数规则：Wan 要求 length = 4n+1
+    frames:
+      grid: 4
+      offset: 1
+      min: 5
+      fps: 24
+
+    sampler: euler
+    scheduler: simple
+    steps: 6
+    steps_quality: 10
+    cfg: 3.5
+
+    align: 16
+
+# 输出
+output:
+  format: mp4
+  codec: h264
+  # ComfyUI 的 SaveVideo 参数（format=mp4 时才有 codec）
